@@ -118,7 +118,9 @@ export const summaryTable = (run: ReconRun, v: RunVersion) => {
           )
           .join(", ")
       : "Reconciled";
-    return `| ${name} | ${cell(s / 100)} | ${cell(b / 100)} | ${cell(k / 100)} | ${gs.length} | ${status} |`;
+    // A mark in front of the words, so status never rests on colour alone.
+    const mark = es.length ? "⚠" : "✓";
+    return `| ${name} | ${cell(s / 100)} | ${cell(b / 100)} | ${cell(k / 100)} | ${gs.length} | ${mark} ${status} |`;
   });
   const other = v.unmatched.filter((u) => u.kind === "bank");
   const otherP = paise(run, other, "bank");
@@ -126,8 +128,8 @@ export const summaryTable = (run: ReconRun, v: RunVersion) => {
     "| Channel | Settlement | Bank | Books | Matched | Status |",
     "|---|---:|---:|---:|---:|---|",
     ...lines,
-    `| Other bank lines | — | ${cell(otherP / 100)} | — | — | ${other.length} lines, no settlement |`,
-    `| **Total** | **${cell(all.s / 100)}** | **${cell((all.b + otherP) / 100)}** | **${cell(all.k / 100)}** | **${all.g}** | **${all.e} exceptions** |`,
+    `| Other bank lines | — | ${cell(otherP / 100)} | — | — | ${other.length ? "✕" : "✓"} ${other.length} lines, no settlement |`,
+    `| **Total** | **${cell(all.s / 100)}** | **${cell((all.b + otherP) / 100)}** | **${cell(all.k / 100)}** | **${all.g}** | **${all.e ? "⚠" : "✓"} ${all.e} exceptions** |`,
   ].join("\n");
 };
 
@@ -294,7 +296,6 @@ const reconRun: NeoTask = {
     let periodId: ReconPeriodId = asked;
     {
       await api.checkpoint();
-      await api.coach(1, GUIDE_COPY.month);
       const sheet = await decide(
         api,
         "Company and period",
@@ -374,7 +375,6 @@ const reconRun: NeoTask = {
     if (picked) attached = picked;
     else if (api.attachments.length) {
       // Files from the paperclip open on the card, to be read and checked.
-      await api.coach(1, GUIDE_COPY.intro);
       const own = await askFiles(api, periodId, api.attachments);
       if (!own) return "Not started";
       attached = own;
@@ -385,13 +385,11 @@ const reconRun: NeoTask = {
         `${p.label} needs three sources: ${TEMPLATE.sources.map((src) => src.label.toLowerCase()).join(", ")}. The books come from the Tally connector; the bank statement and payout reports aren't here yet.`
       );
       await api.checkpoint();
-      await api.coach(1, GUIDE_COPY.intro);
       const own = await askFiles(api, periodId);
       if (!own) return "Not started";
       attached = own;
     }
     api.sources(attached);
-    await api.coach(2, NOTE.check);
     const reading = await api.step(
       `Reading ${attached.length} files`,
       undefined,
@@ -446,7 +444,6 @@ const reconRun: NeoTask = {
     // US-03 AC2: rejected rows are excluded only on purpose.
     if (ready.rejected) {
       const bad = liveSources(run).filter((s) => s.rejected.length);
-      await api.coach(2, NOTE.rejected);
       await api.checkpoint();
       const { choice, picks } = await decide(
         api,
@@ -508,7 +505,6 @@ const reconRun: NeoTask = {
       undefined,
       { skills: ["S3"], tools: ["recon.match"] }
     );
-    await api.coach(3, NOTE.match);
     await api.wait(800);
     run = executeRun(run.id);
     let v = currentVersion(run)!;
@@ -537,7 +533,6 @@ const reconRun: NeoTask = {
     api.stage(7);
     const open = run.questions.filter((q) => !q.answer);
     if (open.length) {
-      await api.coach(4, NOTE.decide);
       await api.checkpoint();
       const { choice, picks } = await decide(
         api,
@@ -583,7 +578,6 @@ const reconRun: NeoTask = {
           : "Submit the run for review.",
       ].join("\n")
     );
-    await api.coach(5, NOTE.review);
     api.suggest([
       ...(v.exceptions.length ? ["Try an edited report"] : []),
       `Submit ${p.short} for review`,

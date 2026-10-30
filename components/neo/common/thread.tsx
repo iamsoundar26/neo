@@ -21,7 +21,6 @@ import { opensInCanvas, sameDoc } from "@/utils/pages/neo/canvas";
 import Message, { DocStrip } from "./message";
 import TurnActions from "./turn-actions";
 import UserMessage from "./user-message";
-import GuideCoach from "@/components/neo/onboarding/guide";
 
 /** The message the running task is waiting on, if any. */
 export const useLiveMessage = (neo: NeoRuntime) =>
@@ -241,7 +240,6 @@ const Thread = ({ variant, onPrompt, scope, header, onOpenScope }: Props) => {
   return (
     <TooltipProvider delayDuration={500}>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {!scope && <GuideCoach onPrompt={onPrompt} />}
         <div
           ref={scroller}
           onScroll={measure}

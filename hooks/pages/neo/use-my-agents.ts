@@ -18,6 +18,8 @@ export type MyAgent = {
   schedule: string;
   access: string;
   status: MyAgentStatus;
+  /** Set when it came from a suggested agent: that agent's id. */
+  fromId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -62,6 +64,36 @@ export const addMyAgent = (
 };
 
 /** Switch on, pause or resume. A draft only runs once it is switched on. */
+/**
+ * Chatting with a suggested agent makes it yours (24 Oct 2026): it joins My
+ * agents, switched on, the first time you work with it. Once only.
+ */
+export const adoptSuggestedAgent = (a: {
+  id: string;
+  name: string;
+  goal: string;
+  data: string;
+  schedule: string;
+  access: string;
+}) => {
+  load();
+  if (list.some((x) => x.fromId === a.id)) return;
+  const { id, ...rest } = a;
+  const now = new Date().toISOString();
+  list = [
+    {
+      ...rest,
+      id: `mine-${Date.now().toString(36)}`,
+      fromId: id,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    },
+    ...list,
+  ];
+  emit();
+};
+
 export const setMyAgentStatus = (id: string, status: MyAgentStatus) => {
   load();
   list = list.map((a) =>

@@ -110,7 +110,6 @@ const reconSetup: NeoTask = {
     );
     api.stage(2);
     await api.checkpoint();
-    await api.coach(0, GUIDE_COPY.notes.setup);
     const { choice, picks } = await decide(
       api,
       prior ? "Confirm the configuration" : "Set up the configuration",

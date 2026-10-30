@@ -28,12 +28,6 @@ import {
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useNeoColumnHidden } from "@/components/neo/page";
-import GuideCoach from "@/components/neo/onboarding/guide";
-import {
-  dismissCoach,
-  setCoach,
-  useReconOnboarding,
-} from "@/hooks/pages/neo/use-recon-onboarding";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -146,37 +140,8 @@ const Directory = ({
     ...MOCK_AGENTS.filter((a) => a.status !== "live"),
   ];
 
-  // Guided mode: two one-line hints, once per visit to this page.
-  const { hints, coach, coachSeen } = useReconOnboarding();
-  const step = useRef(0);
-  useEffect(() => {
-    if (!hints || step.current !== 0) return;
-    step.current = 1;
-    void setCoach({
-      step: 0,
-      title: "",
-      body: "Make your own agent here.",
-      anchor: "agents-create",
-      placement: "bottom",
-    });
-  }, [hints]);
-  useEffect(() => {
-    if (step.current !== 1 || !coachSeen || coach?.anchor !== "agents-create")
-      return;
-    step.current = 2;
-    void setCoach({
-      step: 0,
-      title: "",
-      body: "Open one to see what it does.",
-      anchor: "agents-suggested",
-      placement: "top",
-    });
-  }, [coachSeen, coach]);
-  useEffect(() => () => dismissCoach(), []);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <GuideCoach />
       {/* The bar only brings back the menu: on small screens, or when it is hidden. */}
       <div className={columnHidden ? "" : "lg:hidden"}>
         <AgentsBar />
@@ -184,20 +149,8 @@ const Directory = ({
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-8 sm:px-8">
-            {/* What this page is, in the words of the people who use it. */}
-            <header>
-              <h1 className="text-[24px] font-semibold leading-8 text-pi-ink">
-                Agents
-              </h1>
-              <p className="mt-1 max-w-[68ch] text-[14px] leading-5 text-pi-body [text-wrap:pretty]">
-                Agents are helpers that do a whole accounting job for you, like
-                matching your bank to your books. They prepare the work. You
-                check it and approve it.
-              </p>
-            </header>
-
             {/* Agents you have made, by where they stand. */}
-            <section aria-labelledby="my-agents" className="mt-10">
+            <section aria-labelledby="my-agents">
               <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
                 <div className="min-w-0">
                   <h2
@@ -256,7 +209,6 @@ const Directory = ({
                   </DropdownMenu>
                   <Button
                     data-testid="create-agent"
-                    data-guide-id="agents-create"
                     onClick={() => void startChat("Create an agent")}
                     className="h-9 rounded-lg px-4 text-[14px] font-semibold"
                   >
@@ -311,7 +263,7 @@ const Directory = ({
             </section>
 
             {/* Agents we have built: open one for its plan. */}
-            <section aria-labelledby="agents-suggested" className="mt-10" data-guide-id="agents-suggested">
+            <section aria-labelledby="agents-suggested" className="mt-10">
               <h2
                 id="agents-suggested"
                 className="text-[18px] font-semibold leading-7 text-pi-ink"

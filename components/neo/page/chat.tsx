@@ -1,4 +1,3 @@
-import ModeToggle from "@/components/neo/common/mode-toggle";
 import { NEO_USER } from "@/config/pages/neo/user";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -173,9 +172,6 @@ const NeoChat = () => {
             <NeoMenuButton />
           </div>
           {!empty && <ChatTitle compact />}
-          <div className="ml-auto flex-none">
-            <ModeToggle />
-          </div>
         </header>
 
         {empty ? (

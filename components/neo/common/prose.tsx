@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Check, Copy } from "@/components/icons";
+import { CircleAlert, CircleCheck, CircleX } from "lucide-react";
 import { useStore } from "@/components/inbox/v2/store";
 import type { NeoRef } from "@/types/pages/neo";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,29 @@ const textOf = (node: React.ReactNode): string =>
       : React.isValidElement(node)
         ? textOf((node.props as { children?: React.ReactNode }).children)
         : "";
+
+/**
+ * A status cell that opens with ✓, ⚠ or ✕ gets its mark as an icon in front
+ * of the words: green tick for matched, amber alert for needs review, red
+ * cross for unmatched. The words stay, so the status never rests on colour.
+ */
+const MARKS = {
+  "✓": { Icon: CircleCheck, tone: "text-pi-success", label: "Matched" },
+  "⚠": { Icon: CircleAlert, tone: "text-pi-warning", label: "Needs review" },
+  "✕": { Icon: CircleX, tone: "text-pi-danger", label: "Unmatched" },
+} as const;
+const stripMark = (node: React.ReactNode): React.ReactNode => {
+  if (typeof node === "string") return node.replace(/^\s*[✓⚠✕]\s*/, "");
+  if (Array.isArray(node)) {
+    const [first, ...rest] = node;
+    return [stripMark(first), ...rest];
+  }
+  if (React.isValidElement(node)) {
+    const el = node as React.ReactElement<{ children?: React.ReactNode }>;
+    return React.cloneElement(el, undefined, stripMark(el.props.children));
+  }
+  return node;
+};
 
 /**
  * A table in an answer, with a way out of the chat: Copy as CSV puts the
@@ -190,14 +214,30 @@ const Prose = ({ text, onRef, streaming, className }: Props) => {
           {children}
         </th>
       ),
-      td: ({ children, style }) => (
-        <td
-          style={style}
-          data-num={NUMERIC.test(textOf(children).trim()) || undefined}
-        >
-          {children}
-        </td>
-      ),
+      td: ({ children, style }) => {
+        const mark = textOf(children).trim().charAt(0) as keyof typeof MARKS;
+        const m = MARKS[mark];
+        return (
+          <td
+            style={style}
+            data-num={NUMERIC.test(textOf(children).trim()) || undefined}
+          >
+            {m ? (
+              <span className="inline-flex items-center gap-1.5">
+                <m.Icon
+                  role="img"
+                  aria-label={m.label}
+                  className={cn("h-4 w-4 flex-none", m.tone)}
+                  strokeWidth={2}
+                />
+                <span>{stripMark(children)}</span>
+              </span>
+            ) : (
+              children
+            )}
+          </td>
+        );
+      },
     }),
     [onRef]
   );

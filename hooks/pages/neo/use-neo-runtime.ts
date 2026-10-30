@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { pickTask } from "@/config/pages/neo/tasks";
+import { agentById, RECON_AGENT_ID } from "@/config/pages/neo/mock-agents";
+import { adoptSuggestedAgent } from "@/hooks/pages/neo/use-my-agents";
 import { fallbackFor } from "@/config/pages/neo/doors";
 import type {
   NeoAction,
@@ -419,6 +421,19 @@ export const useNeoRuntime = () => {
         return;
       }
       const task = pickTask(runText, ctx, attachments);
+      // Working with a suggested agent in chat adds it to My agents.
+      if (task?.id.startsWith("recon-")) {
+        const a = agentById(RECON_AGENT_ID);
+        if (a)
+          adoptSuggestedAgent({
+            id: a.id,
+            name: "Three-way reconciliation",
+            goal: "Compare bank statements, payout reports and accounting records",
+            data: "Bank, settlement reports and Tally",
+            schedule: "When asked",
+            access: a.access,
+          });
+      }
       if (!task) {
         // Nothing does it; still say what the request was about and where
         // that work lives. Every miss is logged: it is the research.
@@ -666,7 +681,7 @@ export const useNeoRuntime = () => {
         },
         coach: async (step, note) => {
           guard();
-          if (!reconOnboarding().hints) return;
+          return;
           // A held note waits for Continue, or for the run to stop.
           await Promise.race([
             setCoach({ step, ...note }),
@@ -771,7 +786,6 @@ export const useNeoRuntime = () => {
           replay.length = 0;
           const id = push({ card, actions });
           lastCard = id;
-          if (opensInCanvas(card)) setCanvas(id);
           editableCards.current.set(id, card);
           atSignOff = actions.some(
             (a) => a.primary && a.risk && a.risk !== "read"
@@ -806,13 +820,8 @@ export const useNeoRuntime = () => {
           // click there; a run's closing documents never open themselves.
           // `open: true` opens it at any width from a small laptop up:
           // the guided recon run points its hints at the document.
-          if (
-            opensInCanvas(card) &&
-            (opts?.open === true
-              ? window.innerWidth >= 768
-              : opts?.open !== false && window.innerWidth >= 1440)
-          )
-            setCanvas(id);
+          // A document never opens by itself: its tile in the chat says it
+          // is ready, and the person chooses to open it.
           return (next) => patch(id, (m) => ({ ...m, card: next }));
         },
         updateCard: (card, actions) => {

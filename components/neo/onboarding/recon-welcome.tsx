@@ -9,14 +9,12 @@ import {
 import { configure, useStore } from "@/components/inbox/v2/store";
 import { NANDHINI_ID } from "@/config/pages/neo/mock-recon";
 import {
-  GUIDE_PROMPT,
   RECON_EXPLAINER_STEPS,
   RECON_WELCOME,
 } from "@/config/pages/neo/onboarding";
 import {
   closeReconWelcome,
   openReconWelcome,
-  startGuidedRun,
   useReconOnboarding,
 } from "@/hooks/pages/neo/use-recon-onboarding";
 import { useStartChat } from "@/hooks/pages/neo/use-start-chat";
@@ -90,8 +88,7 @@ const ReconWelcome = () => {
     closeReconWelcome();
     track("recon_onboarding_sample_started");
     window.setTimeout(() => {
-      startGuidedRun();
-      setPending(GUIDE_PROMPT);
+      setPending("Reconcile September");
     }, MODAL_EXIT_MS);
   };
 
