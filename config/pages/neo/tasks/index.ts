@@ -4,6 +4,7 @@ import reconRun from "./recon-run";
 import reconReview from "./recon-review";
 import reconExport from "./recon-export";
 import reconEdit from "./recon-edit";
+import agentCreate from "./agent-create";
 
 /**
  * Everything Neo can do in phase one: three-way reconciliation to the AiA
@@ -17,6 +18,7 @@ import reconEdit from "./recon-edit";
  * deleted.
  */
 export const NEO_TASKS: NeoTask[] = [
+  agentCreate,
   reconSetup,
   reconEdit,
   reconExport,

@@ -17,6 +17,9 @@ import AgentsBar from "./bar";
 import { AgentTile, FeaturedAgent } from "./card";
 import { JOBS } from "@/config/pages/neo/skills";
 import ReconAgent from "./recon";
+import { Sparkles } from "@/components/icons";
+import { useStartChat } from "@/hooks/pages/neo/use-start-chat";
+import { useMyAgents } from "@/hooks/pages/neo/use-my-agents";
 import AgentPanel from "./panel";
 import { AGENTS_HREF } from "./bar";
 
@@ -60,6 +63,8 @@ const Directory = ({
   onClose,
 }: Props & { open?: AgentProfile; onClose: () => void }) => {
   useRecon();
+  const startChat = useStartChat();
+  const mine = useMyAgents();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
   const run = latestRun(company, "sep");
   const v = run && currentVersion(run);
@@ -126,6 +131,57 @@ const Directory = ({
                 })}
               </div>
             </div>
+
+            {/* Your own agents, and the way to make one. */}
+            <section aria-labelledby="my-agents" className="mt-8">
+              <div className="flex items-center justify-between gap-3">
+                <h3
+                  id="my-agents"
+                  className="text-[16px] font-semibold text-pi-ink"
+                >
+                  My agents
+                </h3>
+                <button
+                  type="button"
+                  data-testid="create-agent"
+                  onClick={() => void startChat("Create an agent")}
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-pi-line-2 bg-background px-4 text-[14px] font-medium text-pi-ink transition-colors hover:border-pi-brand-border hover:bg-pi-brand-tint hover:text-pi-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Create agent
+                </button>
+              </div>
+              {mine.length === 0 ? (
+                <p className="mt-3 text-[14px] leading-5 text-pi-body">
+                  You haven&apos;t made an agent yet. Create one and Neo will
+                  ask what it should do.
+                </p>
+              ) : (
+                <ul className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
+                  {mine.map((a) => (
+                    <li
+                      key={a.id}
+                      data-testid="my-agent"
+                      title={`${a.goal} · ${a.data} · ${a.schedule}`}
+                      className="flex items-center gap-3"
+                    >
+                      <span
+                        aria-hidden
+                        className="grid h-9 w-9 place-items-center rounded-xl border border-pi-line-2 bg-pi-head-bg text-pi-brand"
+                      >
+                        <Sparkles className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="text-[14px] font-medium text-pi-ink">
+                        {a.name}
+                      </span>
+                      <span className="inline-flex h-5 items-center rounded-full bg-pi-fill px-2 text-[12px] font-medium text-pi-body">
+                        {a.status === "draft" ? "Draft" : "On"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
             {featured.length > 0 && (
               <section aria-label="Available now" className="mt-8 flex flex-col gap-5">
