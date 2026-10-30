@@ -383,7 +383,7 @@ export const AgentTile = ({
       data-testid="agent-tile"
       style={{ animationDelay: `${120 + index * 40}ms` }}
       className={cn(
-        "neo-agent-rise group flex h-full gap-4 rounded-2xl border p-4 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pi-brand-border sm:p-5",
+        "neo-agent-rise group flex h-full gap-4 rounded-2xl border p-4 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pi-brand focus-visible:ring-offset-2 sm:p-5",
         selected
           ? "border-pi-brand-border bg-pi-head-bg"
           : "border-pi-line-2 bg-background hover:border-pi-brand-border hover:bg-pi-head-bg"
@@ -397,21 +397,21 @@ export const AgentTile = ({
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-[14px] font-semibold leading-5 text-pi-ink">
+          <span className="text-[16px] font-semibold leading-6 text-pi-ink">
             {copy.title}
           </span>
           {agent.status === "live" ? (
-            <span className="inline-flex h-5 items-center gap-1.5 rounded-full bg-pi-success-bg px-2 text-[12px] font-medium leading-4 text-pi-success">
+            <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-pi-success-bg px-2.5 text-[12px] font-medium leading-4 text-pi-success">
               <span className="h-1.5 w-1.5 rounded-full bg-pi-success-dot" />
               Available
             </span>
           ) : (
-            <span className="inline-flex h-5 items-center rounded-full bg-pi-fill px-2 text-[12px] font-medium leading-4 text-pi-body">
+            <span className="inline-flex h-6 items-center rounded-full bg-pi-fill px-2.5 text-[12px] font-medium leading-4 text-pi-body">
               Upcoming
             </span>
           )}
         </span>
-        <span className="mt-1 line-clamp-2 block text-[14px] leading-5 text-pi-body">
+        <span className="mt-1 block text-[14px] leading-5 text-pi-body">
           {copy.description}
         </span>
       </span>

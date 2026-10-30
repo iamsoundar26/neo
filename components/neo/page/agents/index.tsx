@@ -27,6 +27,14 @@ import {
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useNeoColumnHidden } from "@/components/neo/page";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -108,6 +116,7 @@ const Directory = ({
 }: Props & { open?: AgentProfile; onClose: () => void }) => {
   useRecon();
   const startChat = useStartChat();
+  const columnHidden = useNeoColumnHidden();
   const mine = useMyAgents();
   const [filter, setFilter] = useState<StatusFilter>("All");
   const count = (f: StatusFilter) =>
@@ -125,72 +134,58 @@ const Directory = ({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <AgentsBar />
+      {/* The bar only brings back the menu: on small screens, or when it is hidden. */}
+      <div className={columnHidden ? "" : "lg:hidden"}>
+        <AgentsBar />
+      </div>
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-8 sm:px-8">
-            {/* What the page is for, and the one main action. */}
-            <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-              <div className="min-w-0">
-                <h2 className="text-[24px] font-semibold leading-8 text-pi-ink">
-                  Agents
-                </h2>
-                <p className="mt-1 max-w-[560px] text-[14px] leading-5 text-pi-body">
-                  Agents take on whole accounting jobs. They prepare the work;
-                  you review and approve it.
-                </p>
-              </div>
-              <Button
-                data-testid="create-agent"
-                onClick={() => void startChat("Create an agent")}
-                className="h-9 rounded-lg px-4 text-[14px] font-semibold"
-              >
-                <Plus className="h-4 w-4" />
-                Create agent
-              </Button>
-            </header>
-
             {/* Agents you have made, by where they stand. */}
-            <section aria-labelledby="my-agents" className="mt-8">
+            <section aria-labelledby="my-agents">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3
+                <h2
                   id="my-agents"
-                  className="text-[16px] font-semibold leading-6 text-pi-ink"
+                  className="text-[20px] font-semibold leading-7 text-pi-ink"
                 >
                   My agents
-                </h3>
-                <div
-                  role="group"
-                  aria-label="Filter my agents"
-                  className="flex rounded-lg bg-pi-fill p-0.5"
-                >
-                  {STATUS_FILTERS.map((f) => {
-                    const on = f === filter;
-                    return (
-                      <button
-                        key={f}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => setFilter(f)}
-                        className={cn(
-                          "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border",
-                          on
-                            ? "bg-background text-pi-ink shadow-pi-1"
-                            : "text-pi-body hover:text-pi-ink"
-                        )}
-                      >
-                        {f}
-                        <span className="tabular-nums text-pi-faint">
-                          {count(f)}
-                        </span>
-                      </button>
-                    );
-                  })}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={filter}
+                    onValueChange={(v) => setFilter(v as StatusFilter)}
+                  >
+                    <SelectTrigger
+                      aria-label="Filter my agents by status"
+                      data-testid="status-filter"
+                      className="h-9 w-[168px] rounded-lg border-pi-line-2 bg-background px-3 text-[14px] font-medium text-pi-ink focus:ring-2 focus:ring-pi-brand"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_FILTERS.map((f) => (
+                        <SelectItem key={f} value={f} className="text-[14px]">
+                          {f === "All" ? "All statuses" : f}
+                          <span className="ml-2 tabular-nums text-pi-faint">
+                            {count(f)}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    data-testid="create-agent"
+                    onClick={() => void startChat("Create an agent")}
+                    className="h-9 rounded-lg px-4 text-[14px] font-semibold"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create agent
+                  </Button>
                 </div>
               </div>
 
               {shown.length === 0 ? (
-                <div className="mt-3 rounded-xl border border-dashed border-pi-line-2 px-4 py-8 text-center">
+                <div className="mt-4 rounded-xl border border-dashed border-pi-line-2 px-4 py-8 text-center">
                   <p className="text-[14px] font-medium leading-5 text-pi-ink">
                     {mine.length === 0
                       ? "You haven't made an agent yet"
@@ -203,7 +198,7 @@ const Directory = ({
                   </p>
                 </div>
               ) : (
-                <ul className="mt-3 divide-y divide-pi-line-2 overflow-hidden rounded-xl border border-pi-line-2">
+                <ul className="mt-4 divide-y divide-pi-line-2 overflow-hidden rounded-xl border border-pi-line-2">
                   {shown.map((a) => (
                     <MyAgentRow key={a.id} agent={a} />
                   ))}
@@ -213,16 +208,16 @@ const Directory = ({
 
             {/* Agents we have built: open one for its plan. */}
             <section aria-labelledby="agents-suggested" className="mt-10">
-              <h3
+              <h2
                 id="agents-suggested"
-                className="text-[16px] font-semibold leading-6 text-pi-ink"
+                className="text-[20px] font-semibold leading-7 text-pi-ink"
               >
                 Suggested agents
-              </h3>
+              </h2>
               <ul
                 className={cn(
-                  "mt-3 grid gap-4 sm:grid-cols-2",
-                  open ? "" : "xl:grid-cols-3"
+                  "mt-4 grid gap-4",
+                  open ? "grid-cols-1" : "sm:grid-cols-2"
                 )}
               >
                 {suggested.map((a, i) => (
@@ -265,7 +260,7 @@ const MyAgentRow = ({ agent: a }: { agent: MyAgent }) => (
       <Sparkles className="h-5 w-5" />
     </span>
     <span className="min-w-0 flex-1">
-      <span className="block truncate text-[14px] font-semibold leading-5 text-pi-ink">
+      <span className="block truncate text-[16px] font-semibold leading-6 text-pi-ink">
         {a.name}
       </span>
       <span className="block truncate text-[14px] leading-5 text-pi-body">
