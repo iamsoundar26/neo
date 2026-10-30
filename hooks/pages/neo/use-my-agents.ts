@@ -118,5 +118,8 @@ const snapshot = () => {
 };
 const server: MyAgent[] = [];
 
+/** The agents now, for code that isn't a component (a task running one). */
+export const getMyAgents = () => snapshot();
+
 export const useMyAgents = () =>
   useSyncExternalStore(subscribe, snapshot, () => server);

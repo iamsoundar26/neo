@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   REVIEW_LABEL,
@@ -45,7 +46,8 @@ import {
   type MyAgent,
   type MyAgentStatus,
 } from "@/hooks/pages/neo/use-my-agents";
-import AgentPanel from "./panel";
+import AgentPanel, { MyAgentPanel } from "./panel";
+import { agentHref } from "./bar";
 import { AGENTS_HREF } from "./bar";
 
 type Props = { company: string };
@@ -67,6 +69,7 @@ const NeoAgents = ({ company }: Props) => {
   const router = useRouter();
   const id = router.query.agent as string | undefined;
   const open = agentById(id);
+  const openMine = useMyAgents().find((a) => a.id === id);
   // The full page is the live agent's alone; every other view is the
   // directory with the agent's details beside it.
   if (open?.id === RECON_AGENT_ID && router.query.view === "page")
@@ -75,6 +78,7 @@ const NeoAgents = ({ company }: Props) => {
     <Directory
       company={company}
       open={open}
+      openMine={openMine}
       onClose={() =>
         void router.push(AGENTS_HREF, undefined, { shallow: true })
       }
@@ -120,8 +124,13 @@ const ago = (iso: string) => {
 const Directory = ({
   company,
   open,
+  openMine,
   onClose,
-}: Props & { open?: AgentProfile; onClose: () => void }) => {
+}: Props & {
+  open?: AgentProfile;
+  openMine?: MyAgent;
+  onClose: () => void;
+}) => {
   useRecon();
   const startChat = useStartChat();
   const columnHidden = useNeoColumnHidden();
@@ -306,7 +315,11 @@ const Directory = ({
               ) : (
                 <ul className="mt-4 divide-y divide-pi-line-2 overflow-hidden rounded-xl border border-pi-line-2">
                   {shown.map((a) => (
-                    <MyAgentRow key={a.id} agent={a} />
+                    <MyAgentRow
+                      key={a.id}
+                      agent={a}
+                      selected={openMine?.id === a.id}
+                    />
                   ))}
                 </ul>
               )}
@@ -329,7 +342,7 @@ const Directory = ({
               <ul
                 className={cn(
                   "mt-4 grid gap-4",
-                  open ? "grid-cols-1" : "sm:grid-cols-2"
+                  open || openMine ? "grid-cols-1" : "sm:grid-cols-2"
                 )}
               >
                 {suggested.map((a, i) => (
@@ -345,6 +358,7 @@ const Directory = ({
             </section>
           </div>
         </div>
+        {openMine && <MyAgentPanel key={openMine.id} agent={openMine} onClose={onClose} />}
         {open && (
           <AgentPanel
             key={open.id}
@@ -359,12 +373,28 @@ const Directory = ({
 };
 
 /** One of your agents: what it does, where it stands, and its menu. */
-const MyAgentRow = ({ agent: a }: { agent: MyAgent }) => (
+const MyAgentRow = ({
+  agent: a,
+  selected,
+}: {
+  agent: MyAgent;
+  selected?: boolean;
+}) => (
   <li
     data-testid="my-agent"
     data-status={a.status}
-    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-pi-row-hover"
+    className={cn(
+      "flex items-center gap-3 px-4 py-3 transition-colors",
+      selected ? "bg-pi-head-bg" : "hover:bg-pi-row-hover"
+    )}
   >
+    <Link
+      href={agentHref(a.id)}
+      scroll={false}
+      aria-current={selected ? "true" : undefined}
+      aria-label={`Open ${a.name}`}
+      className="flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pi-brand focus-visible:ring-offset-2"
+    >
     <span
       aria-hidden
       className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-pi-line-2 bg-pi-head-bg text-pi-brand"
@@ -382,6 +412,7 @@ const MyAgentRow = ({ agent: a }: { agent: MyAgent }) => (
         Uses {a.data} · Runs {a.schedule.toLowerCase()} · Edited {ago(a.updatedAt).toLowerCase()}
       </span>
     </span>
+    </Link>
     <span
       data-testid="my-agent-status"
       title={STATUS_TITLE[a.status]}
