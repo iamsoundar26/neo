@@ -149,6 +149,56 @@ const Directory = ({
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-8 sm:px-8">
+            {mine.length === 0 ? (
+              <>
+                {/* Nothing made yet: say what agents are, and offer both ways in. */}
+                <header>
+                  <h1 className="text-[24px] font-semibold leading-8 text-pi-ink">
+                    Agents
+                  </h1>
+                  <p className="mt-1 max-w-[68ch] text-[14px] leading-5 text-pi-body [text-wrap:pretty]">
+                    Agents are helpers that do a whole accounting job for you,
+                    like matching your bank to your books. They prepare the
+                    work. You check it and approve it.
+                  </p>
+                </header>
+                <section
+                  aria-label="My agents"
+                  data-testid="agents-empty"
+                  className="mt-6 rounded-xl border border-dashed border-pi-line-2 px-4 py-10 text-center"
+                >
+                  <h2 className="text-[16px] font-semibold leading-6 text-pi-ink">
+                    You haven&apos;t created an agent yet
+                  </h2>
+                  <p className="mx-auto mt-1 max-w-[52ch] text-[14px] leading-5 text-pi-body">
+                    Start with a suggested agent below, or create your own and
+                    Neo will ask what it should do.
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    <Button
+                      data-testid="create-agent"
+                      onClick={() => void startChat("Create an agent")}
+                      className="h-9 rounded-lg px-4 text-[14px] font-semibold"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create agent
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        document
+                          .getElementById("agents-suggested")
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }
+                      className="h-9 rounded-lg px-4 text-[14px] font-medium"
+                    >
+                      See suggested agents
+                    </Button>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <>
             {/* Agents you have made, by where they stand. */}
             <section aria-labelledby="my-agents">
               <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
@@ -261,6 +311,8 @@ const Directory = ({
                 </ul>
               )}
             </section>
+              </>
+            )}
 
             {/* Agents we have built: open one for its plan. */}
             <section aria-labelledby="agents-suggested" className="mt-10">
