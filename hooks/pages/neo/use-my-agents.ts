@@ -7,6 +7,8 @@ import { useSyncExternalStore } from "react";
  *
  * DEV: GET/POST /api/neo/agents?scope=mine.
  */
+export type MyAgentStatus = "active" | "draft" | "paused";
+
 export type MyAgent = {
   id: string;
   name: string;
@@ -15,8 +17,9 @@ export type MyAgent = {
   data: string;
   schedule: string;
   access: string;
-  status: "draft" | "active";
+  status: MyAgentStatus;
   createdAt: string;
+  updatedAt: string;
 };
 
 const KEY = "neo.myAgents";
@@ -28,7 +31,9 @@ const load = () => {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
-    list = JSON.parse(localStorage.getItem(KEY) || "[]");
+    list = (JSON.parse(localStorage.getItem(KEY) || "[]") as MyAgent[]).map(
+      (a) => ({ ...a, updatedAt: a.updatedAt || a.createdAt })
+    );
   } catch {
     list = [];
   }
@@ -40,17 +45,35 @@ const emit = () => {
   listeners.forEach((f) => f());
 };
 
-export const addMyAgent = (a: Omit<MyAgent, "id" | "createdAt" | "status">) => {
+export const addMyAgent = (
+  a: Omit<MyAgent, "id" | "createdAt" | "updatedAt" | "status">
+) => {
   load();
   const made: MyAgent = {
     ...a,
     id: `mine-${Date.now().toString(36)}`,
     status: "draft",
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
   list = [made, ...list];
   emit();
   return made;
+};
+
+/** Switch on, pause or resume. A draft only runs once it is switched on. */
+export const setMyAgentStatus = (id: string, status: MyAgentStatus) => {
+  load();
+  list = list.map((a) =>
+    a.id === id ? { ...a, status, updatedAt: new Date().toISOString() } : a
+  );
+  emit();
+};
+
+export const removeMyAgent = (id: string) => {
+  load();
+  list = list.filter((a) => a.id !== id);
+  emit();
 };
 
 const subscribe = (f: () => void) => {

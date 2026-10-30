@@ -2,7 +2,6 @@ import React from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { NeoMenuButton } from "@/components/neo/page";
-import { MOCK_AGENTS } from "@/config/pages/neo/mock-agents";
 
 type Props = {
   /** The agent open, if any: the bar then leads back to the directory. */
@@ -36,12 +35,9 @@ const AgentsBar = ({ agent }: Props) => (
         </h1>
       </>
     ) : (
-      <>
-        <h1 className="text-[14px] font-semibold text-pi-ink">Agents</h1>
-        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-pi-fill px-1.5 text-[12px] font-semibold tabular-nums text-pi-body">
-          {MOCK_AGENTS.length}
-        </span>
-      </>
+      <h1 className="text-[14px] font-semibold text-pi-ink lg:hidden">
+        Agents
+      </h1>
     )}
   </header>
 );
