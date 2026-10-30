@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   Search,
+  SquarePen,
   Star,
   Trash2,
   X,
@@ -22,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { Loader } from "lucide-react";
 import type { NeoChat } from "@/types/pages/neo";
 import { exportChat } from "./chat-title";
 import { useNeo } from "@/hooks/pages/neo/use-neo";
@@ -86,6 +87,7 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
   const neo = useNeo();
   const busy = !!neo.busy;
   const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
@@ -208,140 +210,142 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
       </nav>
     );
 
+  // The column as the app's own sidebar draws it: a title, three places
+  // (New Chat, Search, Agents), then Recents as one flat list.
+  const flat = grouped.flatMap(([, list]) => list);
+  const ITEM =
+    "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-body-3 font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border disabled:opacity-50";
+  const idle = "text-pi-body hover:bg-pi-fill hover:text-pi-ink";
   return (
     <nav
       aria-label="Neo"
-      className="flex w-60 flex-none flex-col border-r border-pi-line bg-background"
+      className="flex w-[260px] flex-none flex-col border-r border-pi-line bg-background"
     >
-      <div className="flex flex-col gap-3 px-3 pb-3 pt-4">
-        {/* Tertiary (Bloocks outline): New chat is always there, so it
-            shouldn't outweigh the page's own primary action. */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
+      <div className="flex h-14 flex-none items-center justify-between border-b border-pi-line pl-4 pr-2">
+        <h1 className="text-[20px] font-medium leading-7 text-pi-ink">Neo</h1>
+        {onHide && (
+          <button
+            type="button"
+            onClick={onHide}
+            aria-label="Hide Neo menu"
+            title="Hide menu"
+            className={cn(
+              ICON_BTN,
+              "flex-none text-pi-body hover:bg-pi-fill hover:text-pi-ink"
+            )}
+          >
+            <PanelLeftClose className="h-5 w-5" strokeWidth={1.5} />
+          </button>
+        )}
+      </div>
+
+      <ul className="flex flex-none flex-col gap-0.5 px-2 pb-2 pt-3">
+        <li>
+          <button
+            type="button"
+            data-testid="nav-new-chat"
             disabled={busy}
             title={busy ? "Neo is working on the current chat" : undefined}
             onClick={() => {
               neo.reset();
               onPage("chat");
             }}
-            className="h-9 min-w-0 flex-1"
+            className={cn(ITEM, idle)}
           >
-            <Plus />
-            New chat
-          </Button>
-          {onHide && (
-            <button
-              type="button"
-              onClick={onHide}
-              aria-label="Hide chats"
-              title="Hide chats"
-              className={cn(
-                ICON_BTN,
-                "flex-none text-pi-body hover:bg-pi-fill hover:text-pi-ink"
-              )}
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <ul className="flex flex-col gap-0.5">
-          {ITEMS.map((it) => {
-            const active = page === it.id;
-            return (
-              <li key={it.id}>
-                <button
-                  type="button"
-                  aria-current={active ? "page" : undefined}
-                  onClick={() => onPage(it.id)}
-                  className={cn(ROW, active ? ON : OFF)}
-                >
-                  <it.icon
-                    className={cn(
-                      "h-[18px] w-[18px] flex-none",
-                      active ? "text-pi-brand" : "text-pi-body"
-                    )}
-                    strokeWidth={1.75}
-                  />
-                  <span className="flex-1 truncate">{it.label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      <div className="mx-4 border-t border-pi-line" />
-      <div className="flex items-center justify-between px-[18px] pb-2 pt-4">
-        <h2 className="text-body-4 font-semibold uppercase leading-4 tracking-[0.07em] text-pi-faint">
-          Recents
-        </h2>
-        {neo.chats.length > 0 && (
-          <span className="text-body-4 font-medium leading-4 tabular-nums text-pi-faint">
-            {neo.chats.length}
-          </span>
-        )}
-      </div>
-      {/* Search only once there's history to search. */}
-      {neo.chats.length > 0 && (
-        <div className="px-3 pb-1">
-          <label className="flex h-8 items-center gap-2 rounded-lg bg-background px-2.5 text-pi-faint ring-1 ring-inset ring-pi-line-2 transition-shadow duration-150 focus-within:text-pi-body focus-within:ring-pi-brand-border">
-            <Search className="h-3.5 w-3.5 flex-none" />
-            <span className="sr-only">Search chats</span>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-              placeholder="Search chats"
-              className="min-w-0 flex-1 border-0 !bg-transparent p-0 text-[12px] text-pi-ink shadow-none placeholder:text-pi-faint focus:ring-0 focus-visible:outline-none"
-            />
-            {query && (
+            <SquarePen className="h-5 w-5 flex-none" strokeWidth={1.5} />
+            New Chat
+          </button>
+        </li>
+        <li>
+          {searching ? (
+            <label className="flex h-10 items-center gap-3 rounded-lg bg-pi-fill px-3 text-pi-body ring-1 ring-inset ring-pi-brand-border">
+              <Search className="h-5 w-5 flex-none" strokeWidth={1.5} />
+              <span className="sr-only">Search chats</span>
+              <input
+                autoFocus
+                data-testid="nav-search-input"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onBlur={() => !query && setSearching(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQuery("");
+                    setSearching(false);
+                  }
+                }}
+                placeholder="Search chats"
+                className="min-w-0 flex-1 border-0 !bg-transparent p-0 text-body-3 text-pi-ink shadow-none placeholder:text-pi-faint focus:ring-0 focus-visible:outline-none"
+              />
               <button
                 type="button"
-                aria-label="Clear search"
-                onClick={() => setQuery("")}
-                className="grid h-4 w-4 place-items-center rounded-sm hover:text-pi-ink"
+                aria-label="Close search"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setQuery("");
+                  setSearching(false);
+                }}
+                className="grid h-5 w-5 place-items-center rounded-sm text-pi-faint hover:text-pi-ink"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </button>
+            </label>
+          ) : (
+            <button
+              type="button"
+              data-testid="nav-search"
+              onClick={() => setSearching(true)}
+              className={cn(ITEM, idle)}
+            >
+              <Search className="h-5 w-5 flex-none" strokeWidth={1.5} />
+              Search
+            </button>
+          )}
+        </li>
+        <li>
+          <button
+            type="button"
+            data-testid="nav-agents"
+            aria-current={page === "agents" ? "page" : undefined}
+            onClick={() => onPage("agents")}
+            className={cn(
+              ITEM,
+              page === "agents"
+                ? "bg-pi-brand-tint font-semibold text-pi-brand"
+                : idle
             )}
-          </label>
-        </div>
-      )}
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        {grouped.length === 0 && (
-          <p className="flex items-center gap-2 truncate px-2.5 py-2 text-[12px] text-pi-faint">
-            {query ? (
-              <Search className="h-3.5 w-3.5 flex-none" />
-            ) : (
-              <NeoChatIcon className="h-3.5 w-3.5 flex-none" />
-            )}
+          >
+            <NeoAgents className="h-5 w-5 flex-none" strokeWidth={1.5} />
+            Agents
+          </button>
+        </li>
+      </ul>
+
+      <div className="mx-4 border-t border-pi-line" />
+      <h2 className="px-5 pb-1.5 pt-4 text-body-3 font-medium text-pi-faint">
+        Recents
+      </h2>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+        {flat.length === 0 && (
+          <p className="flex items-center gap-2 truncate px-3 py-2 text-body-3 text-pi-faint">
             {query ? "No chats match" : "No chats yet"}
           </p>
         )}
-        {grouped.map(([group, list]) => (
-          <section key={group} className="mt-4 first:mt-2">
-            <h3 className="px-2.5 pb-1 text-[12px] font-medium text-pi-faint">
-              {group}
-            </h3>
-            <ul>
-              {list.map((c) => (
-                <ChatRow
-                  key={c.id}
-                  chat={c}
-                  current={page === "chat" && c.id === neo.chatId}
-                  disabled={busy && c.id !== neo.chatId}
-                  renaming={renaming === c.id}
-                  onRenaming={(on) => setRenaming(on ? c.id : null)}
-                  onOpen={() => {
-                    neo.openChat(c.id);
-                    onPage("chat");
-                  }}
-                />
-              ))}
-            </ul>
-          </section>
-        ))}
+        <ul>
+          {flat.map((c) => (
+            <ChatRow
+              key={c.id}
+              chat={c}
+              current={page === "chat" && c.id === neo.chatId}
+              disabled={busy && c.id !== neo.chatId}
+              renaming={renaming === c.id}
+              onRenaming={(on) => setRenaming(on ? c.id : null)}
+              onOpen={() => {
+                neo.openChat(c.id);
+                onPage("chat");
+              }}
+            />
+          ))}
+        </ul>
       </div>
     </nav>
   );
@@ -397,9 +401,10 @@ const ChatRow = ({
     <li className="group/chat relative">
       {/* Neo is working in this chat: a quiet pulse where the ⋯ will be. */}
       {current && neo.busy && (
-        <span
+        <Loader
           aria-label="Neo is working"
-          className="pointer-events-none absolute right-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 animate-pulse rounded-full bg-pi-brand transition-opacity group-hover/chat:opacity-0"
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-pi-brand transition-opacity group-hover/chat:opacity-0"
+          strokeWidth={1.75}
         />
       )}
       <button
@@ -410,10 +415,10 @@ const ChatRow = ({
         onClick={onOpen}
         className={cn(
           ROW,
-          "h-[30px] pr-8 text-[12px] disabled:opacity-50",
+          "h-10 gap-3 px-3 pr-9 text-body-3 disabled:opacity-50",
           current
-            ? "bg-pi-fill font-medium text-pi-ink"
-            : "text-pi-body hover:bg-pi-fill hover:text-pi-ink"
+            ? "bg-pi-brand-tint font-medium text-pi-ink"
+            : "text-pi-ink-2 hover:bg-pi-fill hover:text-pi-ink"
         )}
       >
         <span
