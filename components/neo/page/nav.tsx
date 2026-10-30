@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   History,
   PanelLeftClose,
@@ -24,11 +24,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Loader } from "lucide-react";
+import { Kbd } from "@/components/ui/kbd";
 import type { NeoChat } from "@/types/pages/neo";
 import { exportChat } from "./chat-title";
 import { useNeo } from "@/hooks/pages/neo/use-neo";
 import { cn } from "@/lib/utils";
-import { DEMO_TODAY } from "@/utils/pages/inbox/ai-calculations";
+import NeoSearch from "./nav-search";
 import type { NeoPageId } from "./index";
 
 type Props = {
@@ -61,23 +62,6 @@ const ON = "bg-pi-brand-tint font-semibold text-pi-brand";
 const OFF = "font-medium text-pi-ink-2 hover:bg-pi-fill hover:text-pi-ink";
 
 /**
- * Today, Yesterday, Previous 7 days, Older — as the chat apps file them,
- * counted from the prototype's one clock (DEMO_TODAY), the same day the
- * brief and the overdue days are counted from. A chat started now is later
- * than that, so it files under Today.
- */
-const groupOf = (iso: string, now = DEMO_TODAY) => {
-  const d = new Date(iso);
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = Math.floor((start.getTime() - d.getTime()) / 86400000) + 1;
-  if (d >= start) return "Today";
-  if (days <= 1) return "Yesterday";
-  if (days <= 7) return "Previous 7 days";
-  return "Older";
-};
-const GROUPS = ["Starred", "Today", "Yesterday", "Previous 7 days", "Older"];
-
-/**
  * Neo's own column, beside the app's icon rail: a new chat, Neo's two
  * places, and the conversations so far — starred first, then by day, with a
  * search over titles and messages. Each chat has a ⋯ menu on hover: Star,
@@ -86,28 +70,32 @@ const GROUPS = ["Starred", "Today", "Yesterday", "Previous 7 days", "Older"];
 const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
   const neo = useNeo();
   const busy = !!neo.busy;
-  const [query, setQuery] = useState("");
-  const [searching, setSearching] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  // Cmd/Ctrl+K opens the search from anywhere in Neo.
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, []);
   const [renaming, setRenaming] = useState<string | null>(null);
 
-  const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const hits = neo.chats.filter(
-      (c) =>
-        !q ||
-        c.title.toLowerCase().includes(q) ||
-        c.messages.some((m) => m.text?.toLowerCase().includes(q))
-    );
-    const by = new Map<string, NeoChat[]>();
-    hits
-      .slice()
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-      .forEach((c) => {
-        const g = c.starred ? "Starred" : groupOf(c.updatedAt);
-        by.set(g, [...(by.get(g) || []), c]);
-      });
-    return GROUPS.filter((g) => by.has(g)).map((g) => [g, by.get(g)!] as const);
-  }, [neo.chats, query]);
+  // Starred first, then the most recent.
+  const flat = useMemo(
+    () =>
+      neo.chats
+        .slice()
+        .sort(
+          (a, b) =>
+            Number(!!b.starred) - Number(!!a.starred) ||
+            b.updatedAt.localeCompare(a.updatedAt)
+        ),
+    [neo.chats]
+  );
 
   // Folded (small screens, 20 Oct 2026): a 52px strip with the same
   // places as icons, recent chats behind one button, and unfold at the foot.
@@ -210,36 +198,32 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
       </nav>
     );
 
-  // The column as the app's own sidebar draws it: a title, three places
-  // (New Chat, Search, Agents), then Recents as one flat list.
-  const flat = grouped.flatMap(([, list]) => list);
+  // The column in the app's own sidebar language: the same 36px rows, 14px
+  // text, 16px icons and colours as the menu on its left.
   const ITEM =
-    "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-body-3 font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border disabled:opacity-50";
-  const idle = "text-pi-body hover:bg-pi-fill hover:text-pi-ink";
+    "flex h-9 w-full items-center gap-2 rounded-md p-2 text-left text-label-2 font-normal transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
+  const idle = "text-secondary-foreground hover:bg-accent hover:text-foreground";
   return (
     <nav
       aria-label="Neo"
-      className="flex w-[260px] flex-none flex-col border-r border-pi-line bg-background"
+      className="flex w-[200px] flex-none flex-col border-r border-pi-line bg-background"
     >
-      <div className="flex h-14 flex-none items-center justify-between border-b border-pi-line pl-4 pr-2">
-        <h1 className="text-[20px] font-medium leading-7 text-pi-ink">Neo</h1>
+      <div className="flex h-12 flex-none items-center justify-between border-b border-pi-line pl-4 pr-2">
+        <h1 className="text-label-1 font-semibold text-foreground">Neo</h1>
         {onHide && (
           <button
             type="button"
             onClick={onHide}
             aria-label="Hide Neo menu"
             title="Hide menu"
-            className={cn(
-              ICON_BTN,
-              "flex-none text-pi-body hover:bg-pi-fill hover:text-pi-ink"
-            )}
+            className="grid h-8 w-8 flex-none place-items-center rounded-md text-secondary-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <PanelLeftClose className="h-5 w-5" strokeWidth={1.5} />
+            <PanelLeftClose className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      <ul className="flex flex-none flex-col gap-0.5 px-2 pb-2 pt-3">
+      <ul className="flex flex-none flex-col gap-1 px-3 pb-2 pt-3">
         <li>
           <button
             type="button"
@@ -252,54 +236,21 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
             }}
             className={cn(ITEM, idle)}
           >
-            <SquarePen className="h-5 w-5 flex-none" strokeWidth={1.5} />
+            <SquarePen className="h-4 w-4 flex-none" />
             New Chat
           </button>
         </li>
         <li>
-          {searching ? (
-            <label className="flex h-10 items-center gap-3 rounded-lg bg-pi-fill px-3 text-pi-body ring-1 ring-inset ring-pi-brand-border">
-              <Search className="h-5 w-5 flex-none" strokeWidth={1.5} />
-              <span className="sr-only">Search chats</span>
-              <input
-                autoFocus
-                data-testid="nav-search-input"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onBlur={() => !query && setSearching(false)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setQuery("");
-                    setSearching(false);
-                  }
-                }}
-                placeholder="Search chats"
-                className="min-w-0 flex-1 border-0 !bg-transparent p-0 text-body-3 text-pi-ink shadow-none placeholder:text-pi-faint focus:ring-0 focus-visible:outline-none"
-              />
-              <button
-                type="button"
-                aria-label="Close search"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setQuery("");
-                  setSearching(false);
-                }}
-                className="grid h-5 w-5 place-items-center rounded-sm text-pi-faint hover:text-pi-ink"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </label>
-          ) : (
-            <button
-              type="button"
-              data-testid="nav-search"
-              onClick={() => setSearching(true)}
-              className={cn(ITEM, idle)}
-            >
-              <Search className="h-5 w-5 flex-none" strokeWidth={1.5} />
-              Search
-            </button>
-          )}
+          <button
+            type="button"
+            data-testid="nav-search"
+            onClick={() => setSearchOpen(true)}
+            className={cn(ITEM, idle)}
+          >
+            <Search className="h-4 w-4 flex-none" />
+            Search
+            <Kbd className="ml-auto bg-transparent text-pi-faint">⌘K</Kbd>
+          </button>
         </li>
         <li>
           <button
@@ -310,27 +261,25 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
             className={cn(
               ITEM,
               page === "agents"
-                ? "bg-pi-brand-tint font-semibold text-pi-brand"
+                ? "bg-accent text-foreground [&>svg]:text-primary"
                 : idle
             )}
           >
-            <NeoAgents className="h-5 w-5 flex-none" strokeWidth={1.5} />
+            <NeoAgents className="h-4 w-4 flex-none" />
             Agents
           </button>
         </li>
       </ul>
 
       <div className="mx-4 border-t border-pi-line" />
-      <h2 className="px-5 pb-1.5 pt-4 text-body-3 font-medium text-pi-faint">
+      <h2 className="px-5 pb-1 pt-3 text-label-3 font-medium text-secondary-foreground">
         Recents
       </h2>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         {flat.length === 0 && (
-          <p className="flex items-center gap-2 truncate px-3 py-2 text-body-3 text-pi-faint">
-            {query ? "No chats match" : "No chats yet"}
-          </p>
+          <p className="px-2 py-2 text-label-2 text-pi-faint">No chats yet</p>
         )}
-        <ul>
+        <ul className="flex flex-col gap-0.5">
           {flat.map((c) => (
             <ChatRow
               key={c.id}
@@ -347,6 +296,21 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
           ))}
         </ul>
       </div>
+      <NeoSearch
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        chats={neo.chats}
+        onNewChat={() => {
+          if (busy) return;
+          neo.reset();
+          onPage("chat");
+        }}
+        onOpenChat={(id) => {
+          if (busy && id !== neo.chatId) return;
+          neo.openChat(id);
+          onPage("chat");
+        }}
+      />
     </nav>
   );
 };
@@ -403,7 +367,7 @@ const ChatRow = ({
       {current && neo.busy && (
         <Loader
           aria-label="Neo is working"
-          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-pi-brand transition-opacity group-hover/chat:opacity-0"
+          className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-pi-brand transition-opacity group-hover/chat:opacity-0"
           strokeWidth={1.75}
         />
       )}
@@ -415,10 +379,10 @@ const ChatRow = ({
         onClick={onOpen}
         className={cn(
           ROW,
-          "h-10 gap-3 px-3 pr-9 text-body-3 disabled:opacity-50",
+          "h-9 gap-2 rounded-md p-2 pr-8 text-label-2 font-normal disabled:opacity-50",
           current
-            ? "bg-pi-brand-tint font-medium text-pi-ink"
-            : "text-pi-ink-2 hover:bg-pi-fill hover:text-pi-ink"
+            ? "bg-accent text-foreground"
+            : "text-secondary-foreground hover:bg-accent hover:text-foreground"
         )}
       >
         <span
