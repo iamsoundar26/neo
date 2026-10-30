@@ -203,6 +203,9 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
   const ITEM =
     "flex h-9 w-full items-center gap-2 rounded-md p-2 text-left text-label-2 font-normal transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
   const idle = "text-secondary-foreground hover:bg-accent hover:text-foreground";
+  const on = "bg-accent text-foreground [&>svg]:text-primary";
+  // A chat with nothing said yet is the New Chat page: that is where you are.
+  const onNew = page === "chat" && neo.messages.length === 0;
   return (
     <nav
       aria-label="Neo"
@@ -234,7 +237,8 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
               neo.reset();
               onPage("chat");
             }}
-            className={cn(ITEM, idle)}
+            aria-current={onNew ? "page" : undefined}
+            className={cn(ITEM, onNew ? on : idle)}
           >
             <SquarePen className="h-4 w-4 flex-none" />
             New Chat
@@ -260,9 +264,7 @@ const NeoNav = ({ page, onPage, folded, onToggle, onHide }: Props) => {
             onClick={() => onPage("agents")}
             className={cn(
               ITEM,
-              page === "agents"
-                ? "bg-accent text-foreground [&>svg]:text-primary"
-                : idle
+              page === "agents" ? on : idle
             )}
           >
             <NeoAgents className="h-4 w-4 flex-none" />
