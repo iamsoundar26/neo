@@ -14,7 +14,7 @@ export const RECON_AGENT_ID = NEO_AGENT.id;
 export const MOCK_AGENTS: AgentProfile[] = [
   {
     id: NEO_AGENT.id,
-    name: NEO_AGENT.name,
+    name: "Three-way reconciliation",
     category: "Reconciliation",
     status: "live",
     goal: NEO_AGENT.goal,

@@ -120,7 +120,16 @@ const AgentPanel = ({ agent, company, onClose, inChat }: Props) => {
       </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
+      <AgentBody agent={agent} />
+    </aside>
+  );
+};
+
+/** What a suggested agent does, can do, needs and never does. */
+export const AgentBody = ({ agent }: { agent: AgentProfile }) => {
+  const Access = agent.access === "Read-only" ? Lock : PenLine;
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         <section>
           <h3 className={HEAD}>What this agent does</h3>
           <p className="mt-2 text-[14px] leading-[23px] text-pi-ink">
@@ -181,8 +190,7 @@ const AgentPanel = ({ agent, company, onClose, inChat }: Props) => {
             ))}
           </ul>
         </section>
-      </div>
-    </aside>
+          </div>
   );
 };
 
@@ -203,76 +211,17 @@ const STATUS_TAG = {
  * main button starts a chat; a draft or paused agent offers to switch on
  * first.
  */
-export const MyAgentPanel = ({
+/** One of your agents: its status, what it does and how it is set up. */
+export const MyAgentBody = ({
   agent: a,
   onClose,
-  inChat,
 }: {
   agent: MyAgent;
   onClose: () => void;
-  inChat?: boolean;
 }) => {
-  const chat = useStartChat();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
   const Access = a.access === "Read only" ? Lock : PenLine;
-  const run = () =>
-    void chat(a.fromId ? "Reconcile September" : `Run my agent: ${a.name}`);
   return (
-    <aside
-      aria-label={a.name}
-      data-testid="my-agent-panel"
-      className="flex min-h-0 w-full flex-none flex-col border-l border-pi-line bg-background duration-200 animate-in fade-in-0 slide-in-from-right-4 motion-reduce:animate-none max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-40 max-lg:max-w-[420px] max-lg:shadow-popover-shadow lg:w-[400px]"
-    >
-      <header className="flex h-16 flex-none items-center gap-3 border-b border-pi-line px-5">
-        <span className="grid h-9 w-9 flex-none place-items-center rounded-[10px] border border-pi-line bg-pi-fill text-pi-brand">
-          <FileSearch className="h-[18px] w-[18px]" strokeWidth={1.75} />
-        </span>
-        <h2 className="min-w-0 flex-1 truncate text-[16px] font-semibold text-pi-ink">
-          {a.name}
-        </h2>
-        <button
-          type="button"
-          aria-label="Close"
-          title="Close (Esc)"
-          onClick={onClose}
-          className="grid h-8 w-8 flex-none place-items-center rounded-md text-pi-body hover:bg-pi-fill hover:text-pi-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </header>
-
-      {!inChat && (
-      <div className="flex-none border-b border-pi-line px-5 py-4">
-        {a.status === "active" ? (
-          <Button
-            data-testid="my-agent-run"
-            onClick={run}
-            className="h-11 w-full rounded-md text-[14px] font-semibold"
-          >
-            <Play className="h-4 w-4" />
-            Run in chat
-          </Button>
-        ) : (
-          <Button
-            data-testid="my-agent-switch"
-            onClick={() => setMyAgentStatus(a.id, "active")}
-            className="h-11 w-full rounded-md text-[14px] font-semibold"
-          >
-            {a.status === "paused" ? "Resume" : "Switch on"}
-          </Button>
-        )}
-        <p className="mt-2 text-[12px] leading-4 text-pi-body">
-          Agents run in the chat. You&apos;ll see its progress there and answer
-          anything it asks.
-        </p>
-      </div>
-      )}
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
+    <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         <section>
           <h3 className={HEAD}>Status</h3>
           <p className="mt-2 flex items-start gap-2.5 text-[14px] leading-5 text-pi-ink">
@@ -343,7 +292,80 @@ export const MyAgentPanel = ({
             Delete agent
           </Button>
         </div>
+          </div>
+  );
+};
+
+export const MyAgentPanel = ({
+  agent: a,
+  onClose,
+  inChat,
+}: {
+  agent: MyAgent;
+  onClose: () => void;
+  inChat?: boolean;
+}) => {
+  const chat = useStartChat();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const Access = a.access === "Read only" ? Lock : PenLine;
+  const run = () =>
+    void chat(a.fromId ? "Reconcile September" : `Run my agent: ${a.name}`);
+  return (
+    <aside
+      aria-label={a.name}
+      data-testid="my-agent-panel"
+      className="flex min-h-0 w-full flex-none flex-col border-l border-pi-line bg-background duration-200 animate-in fade-in-0 slide-in-from-right-4 motion-reduce:animate-none max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-40 max-lg:max-w-[420px] max-lg:shadow-popover-shadow lg:w-[400px]"
+    >
+      <header className="flex h-16 flex-none items-center gap-3 border-b border-pi-line px-5">
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-[10px] border border-pi-line bg-pi-fill text-pi-brand">
+          <FileSearch className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </span>
+        <h2 className="min-w-0 flex-1 truncate text-[16px] font-semibold text-pi-ink">
+          {a.name}
+        </h2>
+        <button
+          type="button"
+          aria-label="Close"
+          title="Close (Esc)"
+          onClick={onClose}
+          className="grid h-8 w-8 flex-none place-items-center rounded-md text-pi-body hover:bg-pi-fill hover:text-pi-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </header>
+
+      {!inChat && (
+      <div className="flex-none border-b border-pi-line px-5 py-4">
+        {a.status === "active" ? (
+          <Button
+            data-testid="my-agent-run"
+            onClick={run}
+            className="h-11 w-full rounded-md text-[14px] font-semibold"
+          >
+            <Play className="h-4 w-4" />
+            Run in chat
+          </Button>
+        ) : (
+          <Button
+            data-testid="my-agent-switch"
+            onClick={() => setMyAgentStatus(a.id, "active")}
+            className="h-11 w-full rounded-md text-[14px] font-semibold"
+          >
+            {a.status === "paused" ? "Resume" : "Switch on"}
+          </Button>
+        )}
+        <p className="mt-2 text-[12px] leading-4 text-pi-body">
+          Agents run in the chat. You&apos;ll see its progress there and answer
+          anything it asks.
+        </p>
       </div>
+      )}
+
+      <MyAgentBody agent={a} onClose={onClose} />
     </aside>
   );
 };

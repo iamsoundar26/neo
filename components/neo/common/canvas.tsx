@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Minimize } from "lucide-react";
+import { Bot, Minimize } from "lucide-react";
 import { ChevronLeft, ChevronRight, Maximize, X } from "@/components/icons";
 import { useNeo } from "@/hooks/pages/neo/use-neo";
 import { useRecon } from "@/hooks/pages/neo/use-recon";
@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 import type { NeoMessage } from "@/types/pages/neo";
 import { CardBody, docIcon, useSignoff } from "./message";
 import { useLiveMessage } from "./thread";
+import { AgentBody, MyAgentBody } from "@/components/neo/page/agents/panel";
+import { agentById } from "@/config/pages/neo/mock-agents";
+import { useMyAgents } from "@/hooks/pages/neo/use-my-agents";
 
 type Props = {
   /**
@@ -156,10 +159,32 @@ const Canvas = ({ variant }: Props) => {
     }
     return out;
   }, [neo.messages]);
+  // The same panel can show the details of the agent this chat is with:
+  // one view at a time, the document or the agent.
+  const mineAgents = useMyAgents();
+  const agentProfile = neo.agentId ? agentById(neo.agentId) : undefined;
+  const agentMine = neo.agentId
+    ? mineAgents.find((a) => a.id === neo.agentId)
+    : undefined;
+  const agentMode =
+    variant === "page" && neo.agentDetails && !!(agentProfile || agentMine);
   const index = docs.findIndex((d) => d.ids.includes(neo.canvas || ""));
   const doc = docs[index];
   // The live one, when this document is waiting for a sign-off.
   const m = doc && (doc.ids.includes(live?.id || "") ? live! : doc.latest);
+
+  useEffect(() => {
+    if (!agentMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const t = e.target as HTMLElement;
+      if (t.closest("[role=dialog], [role=menu], [role=listbox]")) return;
+      e.preventDefault();
+      neo.setAgentDetails(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [agentMode, neo]);
 
   useEffect(() => {
     if (!m) return;
@@ -177,20 +202,28 @@ const Canvas = ({ variant }: Props) => {
   }, [m, neo, expanded]);
 
   useEffect(() => {
-    if (!m?.card) {
+    if (!m?.card || agentMode) {
       motion.current?.cancel();
       restoring.current = false;
       setExpanded(false);
     }
-  }, [!!m?.card]);
+  }, [!!m?.card, agentMode]);
 
-  if (!m?.card) return null;
-  const { title, meta } = canvasTitle(m.card);
-  const waiting = live?.id === m.id;
+  if (!m?.card && !agentMode) return null;
+  const card = m?.card;
+  const { title, meta } = agentMode
+    ? {
+        title: agentProfile?.name ?? agentMine!.name,
+        meta: agentMine
+          ? `Your agent · ${agentMine.status === "active" ? "Active" : agentMine.status === "draft" ? "Draft" : "Paused"}`
+          : "Agent details",
+      }
+    : canvasTitle(card!);
+  const waiting = !agentMode && live?.id === m?.id;
   const panel = variant === "panel";
-  const page = docShape(m.card) !== "record";
-  const Icon = docIcon(m.card);
-  const sheet = m.card.kind === "recon-report";
+  const page = agentMode ? true : docShape(card!) !== "record";
+  const Icon = agentMode ? Bot : docIcon(card!);
+  const sheet = !agentMode && card!.kind === "recon-report";
 
   const paneStyle = panel
     ? {
@@ -286,11 +319,12 @@ const Canvas = ({ variant }: Props) => {
                 </span>
               ) : null}
               {meta}
-              {doc.ids.length > 1
+              {!agentMode && doc && doc.ids.length > 1
                 ? ` · updated ${doc.ids.length === 2 ? "once" : `${doc.ids.length - 1} times`} in this chat`
                 : ""}
             </p>
           </div>
+          {!agentMode && (
           <button
             type="button"
             aria-label={expanded ? "Exit full screen" : "Expand panel"}
@@ -311,7 +345,8 @@ const Canvas = ({ variant }: Props) => {
               <Maximize className="h-4 w-4" />
             )}
           </button>
-          {docs.length > 1 && (
+          )}
+          {!agentMode && docs.length > 1 && (
             <div className="flex items-center text-[12px] tabular-nums text-pi-body">
               <button
                 type="button"
@@ -334,19 +369,30 @@ const Canvas = ({ variant }: Props) => {
               </button>
             </div>
           )}
-          {waiting && (
+          {waiting && m && (
             <SignoffButtons m={m} onAnswer={(v) => neo.answer(m.id, v)} />
           )}
           <button
             type="button"
-            aria-label="Close document"
+            aria-label={agentMode ? "Close agent details" : "Close document"}
             title="Close (Esc)"
-            onClick={() => neo.setCanvas(null)}
+            onClick={() =>
+              agentMode ? neo.setAgentDetails(false) : neo.setCanvas(null)
+            }
             className="grid h-8 w-8 flex-none place-items-center rounded-md text-pi-body hover:bg-pi-fill hover:text-pi-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
           >
             <X className="h-4 w-4" />
           </button>
         </header>
+        {agentMode ? (
+          <div className="neo-canvas flex min-h-0 flex-1 flex-col bg-background" data-testid="agent-details">
+            {agentProfile ? (
+              <AgentBody agent={agentProfile} />
+            ) : (
+              <MyAgentBody agent={agentMine!} onClose={() => neo.setAgentDetails(false)} />
+            )}
+          </div>
+        ) : (
         <div
           className={cn(
             "neo-canvas min-h-0 flex-1 overscroll-contain",
@@ -368,11 +414,11 @@ const Canvas = ({ variant }: Props) => {
             }
           >
             <CardBody
-              message={m}
+              message={m!}
               live={waiting}
-              running={!!m.runId && m.runId === neo.busy}
+              running={!!m!.runId && m!.runId === neo.busy}
               paused={neo.paused}
-              onEditCard={(card) => neo.editCard(m.id, card)}
+              onEditCard={(card) => neo.editCard(m!.id, card)}
               onRef={neo.goTo}
               onPause={neo.pause}
               onResume={neo.resume}
@@ -381,6 +427,7 @@ const Canvas = ({ variant }: Props) => {
             />
           </div>
         </div>
+        )}
       </section>
     </>
   );

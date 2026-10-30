@@ -157,7 +157,18 @@ export const useNeoRuntime = () => {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
   // The document open beside the chat (a message id), page and panel alike.
-  const [canvas, setCanvas] = useState<string | null>(null);
+  // The side panel shows one view at a time: a document (`canvas`) or the
+  // details of the agent this chat is with. Choosing one clears the other.
+  const [canvas, setCanvasState] = useState<string | null>(null);
+  const [agentDetails, setAgentDetailsState] = useState(false);
+  const setCanvas = useCallback((id: string | null) => {
+    setCanvasState(id);
+    if (id) setAgentDetailsState(false);
+  }, []);
+  const setAgentDetails = useCallback((on: boolean) => {
+    setAgentDetailsState(on);
+    if (on) setCanvasState(null);
+  }, []);
   // The docked panel's width, dragged from its left edge. Per viewer.
   const [panelWidth, setPanelWidthState] = useState(PANEL_MIN);
   useEffect(() => {
@@ -1110,6 +1121,7 @@ export const useNeoRuntime = () => {
     setMessages([]);
     setChatId(uid("chat"));
     setAgentId(null);
+    setAgentDetailsState(false);
     setChatCompany(getState().company);
     setCarried(null);
     setCanvas(null);
@@ -1281,6 +1293,7 @@ export const useNeoRuntime = () => {
       if (!chat || chat.company !== getState().company) return;
       setChatId(id);
       setAgentId(chat.agentId ?? null);
+      setAgentDetailsState(false);
       setChatCompany(chat.company);
       setMessages(chat.messages);
       setCanvas(null);
@@ -1385,6 +1398,8 @@ export const useNeoRuntime = () => {
     chats: chats.filter((c) => c.company === company),
     chatId,
     agentId,
+    agentDetails,
+    setAgentDetails,
     openChat,
     deleteChat,
     renameChat,
