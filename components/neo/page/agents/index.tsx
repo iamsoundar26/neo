@@ -65,82 +65,27 @@ const Directory = ({
   useRecon();
   const startChat = useStartChat();
   const mine = useMyAgents();
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
-  const run = latestRun(company, "sep");
-  const v = run && currentVersion(run);
-  const lastRun =
-    run && v
-      ? {
-          period: run.period.label,
-          version: v.n,
-          exceptions: v.exceptions.length,
-          review: REVIEW_LABEL[v.review],
-        }
-      : undefined;
-  const shown = useMemo(
-    () => MOCK_AGENTS.filter((a) => filter === "All" || a.category === filter),
-    [filter]
-  );
-  const featured = shown.filter((a) => a.status === "live");
-  const upNext = shown.filter((a) => a.status !== "live");
+  // Ready first, then the ones still to come.
+  const catalogue = [
+    ...MOCK_AGENTS.filter((a) => a.status === "live"),
+    ...MOCK_AGENTS.filter((a) => a.status !== "live"),
+  ];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <AgentsBar />
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-10 sm:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-              <div className="min-w-0">
-                <h2 className="text-[24px] font-semibold leading-8 tracking-[-0.02em] text-pi-ink">
-                  Agents
-                </h2>
-                <p className="mt-1.5 max-w-[520px] text-[14px] leading-[22px] text-pi-body">
-                  Neo&apos;s agents take on whole accounting jobs. They
-                  prepare the work; you review and approve it.
-                </p>
-              </div>
-              <div
-                role="group"
-                aria-label="Filter agents"
-                className="flex rounded-lg bg-pi-fill p-0.5"
-              >
-                {FILTERS.map((f) => {
-                  const on = f === filter;
-                  const n =
-                    f === "All"
-                      ? MOCK_AGENTS.length
-                      : MOCK_AGENTS.filter((a) => a.category === f).length;
-                  return (
-                    <button
-                      key={f}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setFilter(f)}
-                      className={cn(
-                        "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-body-3 font-medium transition-[background-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border",
-                        on
-                          ? "bg-background text-pi-ink shadow-pi-1"
-                          : "text-pi-body hover:text-pi-ink"
-                      )}
-                    >
-                      {f}
-                      <span className="tabular-nums text-pi-faint">{n}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
+          <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-8 sm:px-8">
             {/* Your own agents, and the way to make one. */}
-            <section aria-labelledby="my-agents" className="mt-8">
+            <section aria-labelledby="my-agents">
               <div className="flex items-center justify-between gap-3">
-                <h3
+                <h2
                   id="my-agents"
-                  className="text-[16px] font-semibold text-pi-ink"
+                  className="text-[20px] font-semibold leading-7 text-pi-ink"
                 >
                   My agents
-                </h3>
+                </h2>
                 <button
                   type="button"
                   data-testid="create-agent"
@@ -157,7 +102,7 @@ const Directory = ({
                   ask what it should do.
                 </p>
               ) : (
-                <ul className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
+                <ul className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
                   {mine.map((a) => (
                     <li
                       key={a.id}
@@ -183,50 +128,31 @@ const Directory = ({
               )}
             </section>
 
-            {featured.length > 0 && (
-              <section aria-label="Available now" className="mt-8 flex flex-col gap-5">
-                {featured.map((a) => (
-                  <FeaturedAgent
-                    key={a.id}
-                    agent={a}
-                    selected={open?.id === a.id}
-                    lastRun={a.id === RECON_AGENT_ID ? lastRun : undefined}
-                    unavailable={
-                      a.id === RECON_AGENT_ID
-                        ? JOBS[0].onlyFor?.(company)
-                        : undefined
-                    }
-                  />
+            {/* What AI Accountant has built: open one for its plan. */}
+            <section aria-labelledby="agents-built" className="mt-10">
+              <h2
+                id="agents-built"
+                className="text-[20px] font-semibold leading-7 text-pi-ink"
+              >
+                Built by AI Accountant
+              </h2>
+              <ul
+                className={cn(
+                  "mt-4 grid gap-4 sm:grid-cols-2",
+                  open ? "" : "xl:grid-cols-3"
+                )}
+              >
+                {catalogue.map((a, i) => (
+                  <li key={a.id}>
+                    <AgentTile
+                      agent={a}
+                      index={i}
+                      selected={open?.id === a.id}
+                    />
+                  </li>
                 ))}
-              </section>
-            )}
-
-            {upNext.length > 0 && (
-              <section aria-labelledby="agents-next" className="mt-12">
-                <div className="flex items-baseline justify-between gap-3 px-1">
-                  <h3
-                    id="agents-next"
-                    className="text-[16px] font-semibold text-pi-ink"
-                  >
-                    Up next
-                  </h3>
-                  <span className="text-[12px] text-pi-faint">
-                    Open a card to see the plan
-                  </span>
-                </div>
-                <ul className="mt-3 grid gap-4 sm:grid-cols-2">
-                  {upNext.map((a, i) => (
-                    <li key={a.id}>
-                      <AgentTile
-                        agent={a}
-                        index={i}
-                        selected={open?.id === a.id}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+              </ul>
+            </section>
           </div>
         </div>
         {open && (

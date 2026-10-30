@@ -400,9 +400,16 @@ export const AgentTile = ({
           <span className="text-[14px] font-semibold leading-5 text-pi-ink">
             {copy.title}
           </span>
-          <span className="inline-flex h-5 items-center rounded-full bg-pi-fill px-2 text-[12px] font-medium leading-4 text-pi-body">
-            Upcoming
-          </span>
+          {agent.status === "live" ? (
+            <span className="inline-flex h-5 items-center gap-1.5 rounded-full bg-pi-success-bg px-2 text-[12px] font-medium leading-4 text-pi-success">
+              <span className="h-1.5 w-1.5 rounded-full bg-pi-success-dot" />
+              Available
+            </span>
+          ) : (
+            <span className="inline-flex h-5 items-center rounded-full bg-pi-fill px-2 text-[12px] font-medium leading-4 text-pi-body">
+              Upcoming
+            </span>
+          )}
         </span>
         <span className="mt-1 line-clamp-2 block text-[14px] leading-5 text-pi-body">
           {copy.description}
