@@ -31,6 +31,8 @@ type Props = {
   agent: AgentProfile;
   company: string;
   onClose: () => void;
+  /** Opened from the agent's own chat: there is nothing to run from here. */
+  inChat?: boolean;
 };
 
 /** Each agent's mark, by what it works on. */
@@ -52,7 +54,7 @@ const HEAD =
  * what it never does, under one Run button. The live recon agent also
  * links to its full page; a planned one says when it comes instead.
  */
-const AgentPanel = ({ agent, company, onClose }: Props) => {
+const AgentPanel = ({ agent, company, onClose, inChat }: Props) => {
   const chat = useStartChat();
   const live = agent.status === "live";
   const unavailable = live ? JOBS[0].onlyFor?.(company) : undefined;
@@ -88,6 +90,7 @@ const AgentPanel = ({ agent, company, onClose }: Props) => {
         </button>
       </header>
 
+      {!inChat && (
       <div className="flex-none border-b border-pi-line px-5 py-4">
         {live ? (
           <button
@@ -115,6 +118,7 @@ const AgentPanel = ({ agent, company, onClose }: Props) => {
           </Link>
         )}
       </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         <section>
@@ -202,9 +206,11 @@ const STATUS_TAG = {
 export const MyAgentPanel = ({
   agent: a,
   onClose,
+  inChat,
 }: {
   agent: MyAgent;
   onClose: () => void;
+  inChat?: boolean;
 }) => {
   const chat = useStartChat();
   useEffect(() => {
@@ -239,6 +245,7 @@ export const MyAgentPanel = ({
         </button>
       </header>
 
+      {!inChat && (
       <div className="flex-none border-b border-pi-line px-5 py-4">
         {a.status === "active" ? (
           <Button
@@ -263,6 +270,7 @@ export const MyAgentPanel = ({
           anything it asks.
         </p>
       </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6">
         <section>

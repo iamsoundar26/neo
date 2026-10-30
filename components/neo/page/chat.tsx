@@ -32,6 +32,11 @@ import DropZone from "@/components/neo/common/drop-zone";
 import Thread, { useLiveMessage } from "@/components/neo/common/thread";
 import { NeoMenuButton, useNeoColumnHidden } from "./index";
 import ChatTitle from "./chat-title";
+import AgentPanel, { MyAgentPanel } from "./agents/panel";
+import { agentById } from "@/config/pages/neo/mock-agents";
+import { useMyAgents } from "@/hooks/pages/neo/use-my-agents";
+import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 
 const NOTE =
   "Neo prepares; you approve. Nothing reaches your books without your click.";
@@ -72,6 +77,18 @@ const TONE: Record<TodayItem["tone"], string> = {
  */
 const NeoChat = () => {
   const neo = useNeo();
+  const mineAgents = useMyAgents();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  // The agent this chat is with: a suggested one, or one of your own.
+  const agentInfo = useMemo(() => {
+    const id = neo.agentId;
+    if (!id) return null;
+    const profile = agentById(id);
+    if (profile) return { profile, mine: undefined };
+    const mine = mineAgents.find((a) => a.id === id);
+    return mine ? { mine, profile: undefined } : null;
+  }, [neo.agentId, mineAgents]);
+  useEffect(() => setDetailsOpen(false), [neo.chatId]);
   const state = useStore();
   const box = useComposer(neo);
   const live = useLiveMessage(neo);
@@ -172,6 +189,19 @@ const NeoChat = () => {
             <NeoMenuButton />
           </div>
           {!empty && <ChatTitle compact />}
+          {/* Only a chat with an agent offers that agent's details. */}
+          {agentInfo && (
+            <Button
+              variant="outline"
+              data-testid="view-details"
+              aria-pressed={detailsOpen}
+              onClick={() => setDetailsOpen((v) => !v)}
+              className="ml-auto h-8 rounded-lg px-3 text-[14px] font-medium"
+            >
+              <Info className="h-4 w-4" />
+              View details
+            </Button>
+          )}
         </header>
 
         {empty ? (
@@ -271,6 +301,13 @@ const NeoChat = () => {
         )}
       </DropZone>
       <Canvas variant="page" />
+      {agentInfo && detailsOpen && (
+        agentInfo.mine ? (
+          <MyAgentPanel agent={agentInfo.mine} inChat onClose={() => setDetailsOpen(false)} />
+        ) : agentInfo.profile ? (
+          <AgentPanel agent={agentInfo.profile} company={state.company} inChat onClose={() => setDetailsOpen(false)} />
+        ) : null
+      )}
       <Shortcuts />
     </section>
   );

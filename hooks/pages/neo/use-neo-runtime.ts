@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { pickTask } from "@/config/pages/neo/tasks";
 import { agentById, RECON_AGENT_ID } from "@/config/pages/neo/mock-agents";
-import { adoptSuggestedAgent } from "@/hooks/pages/neo/use-my-agents";
+import { adoptSuggestedAgent, getMyAgents } from "@/hooks/pages/neo/use-my-agents";
 import { fallbackFor } from "@/config/pages/neo/doors";
 import type {
   NeoAction,
@@ -184,6 +184,9 @@ export const useNeoRuntime = () => {
     structuredClone(MOCK_NEO_CHATS)
   );
   const [chatId, setChatId] = useState(() => uid("chat"));
+  // The agent this chat is with (a suggested agent or one of your own), so
+  // its header can offer the agent's details.
+  const [agentId, setAgentId] = useState<string | null>(null);
   // Neo is one company's: a chat belongs to the company it was started in,
   // and Recent chats lists only the company in the top bar (20 Oct 2026).
   const [chatCompany, setChatCompany] = useState(company);
@@ -421,6 +424,17 @@ export const useNeoRuntime = () => {
         return;
       }
       const task = pickTask(runText, ctx, attachments);
+      // Which agent this chat is with, for its header.
+      const withAgent = task?.id.startsWith("recon-")
+        ? RECON_AGENT_ID
+        : task?.id === "agent-run"
+          ? getMyAgents().find(
+              (x) =>
+                x.name.toLowerCase() ===
+                runText.replace(/^\s*run my agent[:\s]*/i, "").trim().toLowerCase()
+            )?.id
+          : undefined;
+      if (withAgent) setAgentId(withAgent);
       // Working with a suggested agent in chat adds it to My agents.
       if (task?.id.startsWith("recon-")) {
         const a = agentById(RECON_AGENT_ID);
@@ -1073,6 +1087,7 @@ export const useNeoRuntime = () => {
         title,
         updatedAt: new Date().toISOString(),
         messages,
+        agentId: agentId ?? undefined,
       };
       return cs.some((c) => c.id === chatId)
         ? cs.map((c) =>
@@ -1088,12 +1103,13 @@ export const useNeoRuntime = () => {
           )
         : [entry, ...cs];
     });
-  }, [messages, chatId, chatCompany]);
+  }, [messages, chatId, chatCompany, agentId]);
 
   const reset = useCallback(() => {
     if (controller.current) return;
     setMessages([]);
     setChatId(uid("chat"));
+    setAgentId(null);
     setChatCompany(getState().company);
     setCarried(null);
     setCanvas(null);
@@ -1264,6 +1280,7 @@ export const useNeoRuntime = () => {
       const chat = chats.find((c) => c.id === id);
       if (!chat || chat.company !== getState().company) return;
       setChatId(id);
+      setAgentId(chat.agentId ?? null);
       setChatCompany(chat.company);
       setMessages(chat.messages);
       setCanvas(null);
@@ -1367,6 +1384,7 @@ export const useNeoRuntime = () => {
     reset,
     chats: chats.filter((c) => c.company === company),
     chatId,
+    agentId,
     openChat,
     deleteChat,
     renameChat,

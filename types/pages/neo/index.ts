@@ -392,6 +392,8 @@ export type NeoChat = {
   starred?: boolean;
   /** Renamed by the person: the automatic title never overwrites it. */
   named?: boolean;
+  /** The agent this chat is with, when it is one: its id. */
+  agentId?: string;
 };
 
 /** A file on the upload card, with what Neo understood from it. */
