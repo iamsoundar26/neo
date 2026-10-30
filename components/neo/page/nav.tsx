@@ -372,12 +372,19 @@ const ChatRow = ({
       {/* Neo is working in this chat: it spins, wherever you are in Neo. When
           it has finished, or needs you, and you are elsewhere: a dot. */}
       {running && (
-        <Loader
-          aria-label="Neo is working"
+        // Positioned by the wrapper, turned by the icon: both use `transform`,
+        // so on one element the spin throws the centring away.
+        <span
           data-testid="chat-working"
-          className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary transition-opacity group-hover/chat:opacity-0"
-          strokeWidth={2}
-        />
+          role="status"
+          aria-label="Neo is working"
+          className="pointer-events-none absolute right-2.5 top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center transition-opacity group-hover/chat:opacity-0"
+        >
+          <Loader
+            className="h-4 w-4 animate-spin text-primary motion-reduce:animate-none"
+            strokeWidth={2}
+          />
+        </span>
       )}
       {!running && isUnread && (
         <span
