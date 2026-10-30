@@ -316,7 +316,7 @@ const SidebarLayout = ({
             companies?.find((c) => c.companyUuid === companyId)?.companyName ??
             "Shakunthalam Oil & Refineries",
         }}
-        user={{ initials: "SB", email: "sandeep.balaji@aiaccountant.com" }}
+        user={{ initials: "SR", email: "soundar@aiaccountant.com" }}
         onGuide={onGuide}
         companies={companies}
         companyId={companyId}

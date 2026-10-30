@@ -104,7 +104,7 @@ export const SEED_COMPANIES: Company[] = [
     tool: "tally",
   },
 ];
-export const actor = "Sandeep Balaji";
+export const actor = "Soundar R";
 export type Form = {
   gst: string;
   voucherType: string;

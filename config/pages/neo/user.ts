@@ -6,5 +6,5 @@
  */
 export const NEO_USER = {
   firstName: "Soundar",
-  email: "product@aiaccountant.com",
+  email: "soundar@aiaccountant.com",
 };
