@@ -1,5 +1,6 @@
-import React, { createContext, ReactNode } from "react";
+import React, { createContext, ReactNode, useEffect, useRef } from "react";
 import { useSourceWatcher } from "@/hooks/pages/inbox/use-source-watcher";
+import { awaitingYou, markUnread } from "@/hooks/pages/neo/use-unread";
 import {
   useNeoRuntime,
   type NeoRuntime,
@@ -18,6 +19,21 @@ type Props = { children: ReactNode };
 const NeoProvider = ({ children }: Props) => {
   useSourceWatcher();
   const runtime = useNeoRuntime();
+  // Something new in a chat you are not looking at: finished, or waiting on
+  // you. The row in Recents shows a dot until you open it.
+  const was = useRef({ busy: false, waiting: false, chat: "" });
+  const waiting = awaitingYou(runtime);
+  useEffect(() => {
+    const prev = was.current;
+    const busy = !!runtime.busy;
+    if (prev.busy && !busy) markUnread(prev.chat);
+    if (waiting && !prev.waiting) markUnread(runtime.chatId);
+    was.current = {
+      busy,
+      waiting,
+      chat: busy ? runtime.chatId : prev.chat,
+    };
+  }, [runtime.busy, runtime.chatId, waiting]);
   return <NeoContext.Provider value={runtime}>{children}</NeoContext.Provider>;
 };
 

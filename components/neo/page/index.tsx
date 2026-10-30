@@ -3,12 +3,15 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/router";
 import { PanelLeftOpen } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import NeoNav from "./nav";
+import { useNeo } from "@/hooks/pages/neo/use-neo";
+import { awaitingYou, markUnread, setViewing } from "@/hooks/pages/neo/use-unread";
 
 export type NeoPageId = "chat" | "agents";
 
@@ -74,6 +77,21 @@ type Props = { page: NeoPageId; children: ReactNode };
  */
 const NeoPage = ({ page, children }: Props) => {
   const router = useRouter();
+  const neo = useNeo();
+  // The chat on screen is read; leaving the chat (Agents, another menu) means
+  // anything new in it will wait with a dot.
+  const latest = useRef(neo);
+  latest.current = neo;
+  useEffect(() => {
+    const chat = neo.chatId;
+    setViewing(page === "chat" ? chat : null);
+    return () => {
+      setViewing(null);
+      // Leaving a chat that is waiting on you: it keeps a dot.
+      if (awaitingYou(latest.current) && latest.current.chatId === chat)
+        markUnread(chat);
+    };
+  }, [page, neo.chatId]);
   const [menu, setMenu] = useState(false);
   const [hidden, setHidden] = useState(false);
   useEffect(() => {

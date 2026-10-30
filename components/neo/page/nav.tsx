@@ -30,6 +30,7 @@ import { exportChat } from "./chat-title";
 import { useNeo } from "@/hooks/pages/neo/use-neo";
 import { cn } from "@/lib/utils";
 import NeoSearch from "./nav-search";
+import { awaitingYou, useUnread } from "@/hooks/pages/neo/use-unread";
 import type { NeoPageId } from "./index";
 
 type Props = {
@@ -338,7 +339,10 @@ const ChatRow = ({
   onOpen,
 }: RowProps) => {
   const neo = useNeo();
+  const unread = useUnread();
   const [draft, setDraft] = useState(c.title);
+  const running = c.id === neo.chatId && !!neo.busy && !awaitingYou(neo);
+  const isUnread = unread.has(c.id);
   if (renaming)
     return (
       <li>
@@ -365,12 +369,22 @@ const ChatRow = ({
     );
   return (
     <li className="group/chat relative">
-      {/* Neo is working in this chat: a quiet pulse where the ⋯ will be. */}
-      {current && neo.busy && (
+      {/* Neo is working in this chat: it spins, wherever you are in Neo. When
+          it has finished, or needs you, and you are elsewhere: a dot. */}
+      {running && (
         <Loader
           aria-label="Neo is working"
-          className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-pi-brand transition-opacity group-hover/chat:opacity-0"
-          strokeWidth={1.75}
+          data-testid="chat-working"
+          className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary transition-opacity group-hover/chat:opacity-0"
+          strokeWidth={2}
+        />
+      )}
+      {!running && isUnread && (
+        <span
+          role="img"
+          aria-label="New activity"
+          data-testid="chat-unread"
+          className="pointer-events-none absolute right-3 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary transition-opacity group-hover/chat:opacity-0"
         />
       )}
       <button
