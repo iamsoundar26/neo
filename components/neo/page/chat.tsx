@@ -179,10 +179,13 @@ const NeoChat = () => {
         <header
           className={cn(
             "relative flex h-12 flex-none items-center gap-1 px-2 lg:px-4",
-            !empty && "border-b border-pi-line"
+            !empty && "border-b border-pi-line",
+            // The home has no bar on a wide screen: it only brings the menu
+            // back when the menu is hidden, or on a small screen.
+            empty && !columnHidden && "lg:hidden"
           )}
         >
-          <div className={cn(empty && !columnHidden && "lg:hidden")}>
+          <div>
             <NeoMenuButton />
           </div>
           {!empty && <ChatTitle compact />}
