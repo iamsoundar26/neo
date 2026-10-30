@@ -407,7 +407,7 @@ export const AgentTile = ({
             </span>
           ) : (
             <span className="inline-flex h-6 items-center rounded-full bg-pi-fill px-2.5 text-[12px] font-medium leading-4 text-pi-body">
-              Upcoming
+              Coming soon
             </span>
           )}
         </span>

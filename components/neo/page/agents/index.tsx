@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import {
   REVIEW_LABEL,
@@ -18,6 +18,7 @@ import { AgentTile, FeaturedAgent } from "./card";
 import { JOBS } from "@/config/pages/neo/skills";
 import ReconAgent from "./recon";
 import {
+  ChevronDown,
   Ellipsis,
   Pause,
   Play,
@@ -26,18 +27,19 @@ import {
   Trash2,
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useNeoColumnHidden } from "@/components/neo/page";
+import GuideCoach from "@/components/neo/onboarding/guide";
+import {
+  dismissCoach,
+  setCoach,
+  useReconOnboarding,
+} from "@/hooks/pages/neo/use-recon-onboarding";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -93,6 +95,18 @@ const STATUS_LABEL: Record<MyAgentStatus, string> = {
   draft: "Draft",
   paused: "Paused",
 };
+/** What each status means, in the words an owner would use. */
+const STATUS_HELP: Record<StatusFilter, string> = {
+  All: "Every agent you've created",
+  Active: "Switched on and ready to run",
+  Draft: "Saved, but not switched on yet",
+  Paused: "Stopped for now; resume any time",
+};
+const STATUS_TITLE: Record<MyAgentStatus, string> = {
+  active: STATUS_HELP.Active,
+  draft: STATUS_HELP.Draft,
+  paused: STATUS_HELP.Paused,
+};
 const STATUS_STYLE: Record<MyAgentStatus, string> = {
   active: "bg-pi-success-bg text-pi-success",
   draft: "bg-pi-fill text-pi-body",
@@ -132,8 +146,37 @@ const Directory = ({
     ...MOCK_AGENTS.filter((a) => a.status !== "live"),
   ];
 
+  // Guided mode: two one-line hints, once per visit to this page.
+  const { hints, coach, coachSeen } = useReconOnboarding();
+  const step = useRef(0);
+  useEffect(() => {
+    if (!hints || step.current !== 0) return;
+    step.current = 1;
+    void setCoach({
+      step: 0,
+      title: "",
+      body: "Make your own agent here.",
+      anchor: "agents-create",
+      placement: "bottom",
+    });
+  }, [hints]);
+  useEffect(() => {
+    if (step.current !== 1 || !coachSeen || coach?.anchor !== "agents-create")
+      return;
+    step.current = 2;
+    void setCoach({
+      step: 0,
+      title: "",
+      body: "Open one to see what it does.",
+      anchor: "agents-suggested",
+      placement: "top",
+    });
+  }, [coachSeen, coach]);
+  useEffect(() => () => dismissCoach(), []);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <GuideCoach />
       {/* The bar only brings back the menu: on small screens, or when it is hidden. */}
       <div className={columnHidden ? "" : "lg:hidden"}>
         <AgentsBar />
@@ -141,40 +184,79 @@ const Directory = ({
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-8 sm:px-8">
+            {/* What this page is, in the words of the people who use it. */}
+            <header>
+              <h1 className="text-[24px] font-semibold leading-8 text-pi-ink">
+                Agents
+              </h1>
+              <p className="mt-1 max-w-[68ch] text-[14px] leading-5 text-pi-body [text-wrap:pretty]">
+                Agents are helpers that do a whole accounting job for you, like
+                matching your bank to your books. They prepare the work. You
+                check it and approve it.
+              </p>
+            </header>
+
             {/* Agents you have made, by where they stand. */}
-            <section aria-labelledby="my-agents">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2
-                  id="my-agents"
-                  className="text-[20px] font-semibold leading-7 text-pi-ink"
-                >
-                  My agents
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={filter}
-                    onValueChange={(v) => setFilter(v as StatusFilter)}
+            <section aria-labelledby="my-agents" className="mt-10">
+              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+                <div className="min-w-0">
+                  <h2
+                    id="my-agents"
+                    className="text-[18px] font-semibold leading-7 text-pi-ink"
                   >
-                    <SelectTrigger
-                      aria-label="Filter my agents by status"
-                      data-testid="status-filter"
-                      className="h-9 w-[168px] rounded-lg border-pi-line-2 bg-background px-3 text-[14px] font-medium text-pi-ink focus:ring-2 focus:ring-pi-brand"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_FILTERS.map((f) => (
-                        <SelectItem key={f} value={f} className="text-[14px]">
-                          {f === "All" ? "All statuses" : f}
-                          <span className="ml-2 tabular-nums text-pi-faint">
-                            {count(f)}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    My agents
+                  </h2>
+                  <p className="mt-1 max-w-[68ch] text-[14px] leading-5 text-pi-body [text-wrap:pretty]">
+                    Agents you&apos;ve created. A <strong className="font-semibold text-pi-ink">Draft</strong> won&apos;t run until you switch it on.
+                  </p>
+                </div>
+                <div className="flex flex-none items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Filter my agents by status. Showing ${filter === "All" ? "all statuses" : filter}`}
+                        data-testid="status-filter"
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-pi-line-2 bg-background px-3 text-[14px] font-medium leading-5 text-pi-ink transition-colors hover:bg-pi-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pi-brand data-[state=open]:bg-pi-fill"
+                      >
+                        {filter === "All" ? "All statuses" : filter}
+                        <span className="tabular-nums text-pi-body">
+                          {count(filter)}
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-pi-body" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[280px]">
+                      <DropdownMenuRadioGroup
+                        value={filter}
+                        onValueChange={(v) => setFilter(v as StatusFilter)}
+                      >
+                        {STATUS_FILTERS.map((f) => (
+                          <DropdownMenuRadioItem
+                            key={f}
+                            value={f}
+                            data-testid={`filter-${f}`}
+                            className="items-start py-2"
+                          >
+                            <span className="block min-w-0 flex-1">
+                              <span className="flex items-center justify-between gap-3 text-[14px] font-medium leading-5 text-pi-ink">
+                                {f === "All" ? "All statuses" : f}
+                                <span className="tabular-nums text-pi-body">
+                                  {count(f)}
+                                </span>
+                              </span>
+                              <span className="block text-[12px] leading-4 text-pi-body">
+                                {STATUS_HELP[f]}
+                              </span>
+                            </span>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     data-testid="create-agent"
+                    data-guide-id="agents-create"
                     onClick={() => void startChat("Create an agent")}
                     className="h-9 rounded-lg px-4 text-[14px] font-semibold"
                   >
@@ -186,16 +268,38 @@ const Directory = ({
 
               {shown.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-pi-line-2 px-4 py-8 text-center">
-                  <p className="text-[14px] font-medium leading-5 text-pi-ink">
+                  <p className="text-[16px] font-semibold leading-6 text-pi-ink">
                     {mine.length === 0
-                      ? "You haven't made an agent yet"
+                      ? "You haven't created an agent yet"
                       : `No ${filter.toLowerCase()} agents`}
                   </p>
-                  <p className="mt-1 text-[14px] leading-5 text-pi-body">
+                  <p className="mx-auto mt-1 max-w-[52ch] text-[14px] leading-5 text-pi-body">
                     {mine.length === 0
-                      ? "Create one and Neo will ask what it should do."
+                      ? "Start with a suggested agent below, or create your own and Neo will ask what it should do."
                       : "Agents with that status will show here."}
                   </p>
+                  {mine.length === 0 && (
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <Button
+                        onClick={() => void startChat("Create an agent")}
+                        className="h-9 rounded-lg px-4 text-[14px] font-semibold"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Create agent
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          document
+                            .getElementById("agents-suggested")
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                        className="h-9 rounded-lg px-4 text-[14px] font-medium"
+                      >
+                        See suggested agents
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <ul className="mt-4 divide-y divide-pi-line-2 overflow-hidden rounded-xl border border-pi-line-2">
@@ -207,13 +311,17 @@ const Directory = ({
             </section>
 
             {/* Agents we have built: open one for its plan. */}
-            <section aria-labelledby="agents-suggested" className="mt-10">
+            <section aria-labelledby="agents-suggested" className="mt-10" data-guide-id="agents-suggested">
               <h2
                 id="agents-suggested"
-                className="text-[20px] font-semibold leading-7 text-pi-ink"
+                className="text-[18px] font-semibold leading-7 text-pi-ink"
               >
                 Suggested agents
               </h2>
+              <p className="mt-1 max-w-[68ch] text-[14px] leading-5 text-pi-body [text-wrap:pretty]">
+                Ready-made agents. Open one to see what it does, what it needs,
+                and what it never does.
+              </p>
               <ul
                 className={cn(
                   "mt-4 grid gap-4",
@@ -264,13 +372,17 @@ const MyAgentRow = ({ agent: a }: { agent: MyAgent }) => (
         {a.name}
       </span>
       <span className="block truncate text-[14px] leading-5 text-pi-body">
-        {a.goal} · {a.data} · {a.schedule}
+        {a.goal}
+      </span>
+      <span className="block truncate text-[12px] leading-4 text-pi-body">
+        Uses {a.data} · Runs {a.schedule.toLowerCase()} · Edited {ago(a.updatedAt).toLowerCase()}
       </span>
     </span>
     <span
       data-testid="my-agent-status"
+      title={STATUS_TITLE[a.status]}
       className={cn(
-        "inline-flex h-6 flex-none items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium",
+        "inline-flex h-6 flex-none items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium leading-4",
         STATUS_STYLE[a.status]
       )}
     >
@@ -278,9 +390,6 @@ const MyAgentRow = ({ agent: a }: { agent: MyAgent }) => (
         <span className="h-1.5 w-1.5 rounded-full bg-pi-success-dot" />
       )}
       {STATUS_LABEL[a.status]}
-    </span>
-    <span className="hidden w-[88px] flex-none text-right text-[14px] text-pi-body sm:block">
-      {ago(a.updatedAt)}
     </span>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
