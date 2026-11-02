@@ -9,8 +9,8 @@ import React, { useEffect, useRef } from "react";
  * with reduced motion, nothing happens.
  */
 const SPACING = 26;
-const RADIUS = 190; // how far the pointer reaches
-const PULL = 15; // the most a dot leans toward it, px
+const RADIUS = 170; // how far the pointer reaches
+const PULL = 9; // the most a dot leans toward it, px
 const IDLE_MS = 650;
 /** The tinted area, as a share of the home's height. */
 const AREA = 0.4;
@@ -83,10 +83,10 @@ const HomeBackdrop = () => {
           moving = true;
         const a = Math.min(1, f * 1.15) * level;
         if (a < 0.01) continue;
-        ctx.globalAlpha = a * 0.7;
+        ctx.globalAlpha = a * 0.45;
         ctx.fillStyle = brand;
         ctx.beginPath();
-        ctx.arc(d.x + d.ox, d.y + d.oy, 1.15 + f * 1.1, 0, Math.PI * 2);
+        ctx.arc(d.x + d.ox, d.y + d.oy, 1.15 + f * 0.6, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
