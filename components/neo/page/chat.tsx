@@ -32,6 +32,7 @@ import DropZone from "@/components/neo/common/drop-zone";
 import Thread, { useLiveMessage } from "@/components/neo/common/thread";
 import { NeoMenuButton, useNeoColumnHidden } from "./index";
 import ChatTitle from "./chat-title";
+import HomeBackdrop from "@/components/neo/common/home-backdrop";
 import { agentById } from "@/config/pages/neo/mock-agents";
 import { useMyAgents } from "@/hooks/pages/neo/use-my-agents";
 import { Button } from "@/components/ui/button";
@@ -208,7 +209,7 @@ const NeoChat = () => {
           // my-auto centres the home in the page and still lets it scroll
           // from the top when the window is shorter than it.
           <div className="neo-home relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-5 py-10 sm:px-6 [@media(max-height:700px)]:py-5">
-            <div className="neo-home-backdrop" aria-hidden="true" />
+            <HomeBackdrop />
             <div className="relative my-auto flex w-full flex-col items-center">
               <svg
                 role="img"
