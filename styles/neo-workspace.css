@@ -668,19 +668,8 @@ html[data-neo-open] [data-sonner-toaster][data-y-position="bottom"] {
     radial-gradient(ellipse 40% 45% at 100% 0%, color-mix(in srgb, var(--pi-brand-vivid) 10%, transparent), transparent 80%),
     linear-gradient(to bottom, color-mix(in srgb, var(--pi-brand) 6%, hsl(var(--background))), hsl(var(--background)) 70%);
 }
-.neo-home-backdrop::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--pi-brand) 34%, transparent) 1.2px, transparent 1.7px);
-  background-size: 26px 26px;
-  /* A soft pool of dots around the pointer (--mx, --my), shown only while
-     it moves (--dots): see components/neo/common/home-backdrop.tsx. */
-  -webkit-mask-image: radial-gradient(circle 170px at var(--mx, -400px) var(--my, -400px), #000 0%, rgb(0 0 0 / 0.45) 45%, transparent 100%);
-  mask-image: radial-gradient(circle 170px at var(--mx, -400px) var(--my, -400px), #000 0%, rgb(0 0 0 / 0.45) 45%, transparent 100%);
-  opacity: var(--dots, 0);
-  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1);
-}
+/* The dot grid is drawn on a canvas inside the backdrop (home-backdrop.tsx):
+   the dots lean toward the pointer, only in the tinted area. */
 @media (prefers-reduced-motion: reduce) {
   .neo-home-chip { transition: none; }
   .neo-home-rise { animation: none; }
